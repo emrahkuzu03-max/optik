@@ -118,7 +118,13 @@ body:not(.serbest) .freeOnly{display:none!important}
   </div>
   <div class="card balOnly">
     <h2>Balonlu optik form</h2>
-    <div class="hint" style="margin-top:0">Herhangi bir balonlu cevap kâğıdı kullanılabilir; şablon gerekmez.<br>• Soru ve şık sayısını yukarıda girin.<br>• Uygulama balon sütunlarını bulur ve her sütunun üstündeki <b>A B C D E</b> başlığına göre yönü ve şık sırasını belirler; soruları sütun sütun, başlıktan aşağı doğru numaralar (1–10, 11–20 …).<br>• Kâğıt yan ya da ters tutulabilir; yalnız tüm balonlar ve sütun başlıkları kamerada görünmeli.<br>• Cevap anahtarını <b>Anahtar</b> sekmesinde yazın ya da doldurulmuş anahtar kâğıdını okutun.</div>
+    <div class="hint" style="margin-top:0">Soru ve şık sayısını yukarıda girin, sonra:</div>
+    <div class="btns"><label class="btn acc" style="flex:1">1) Boş kâğıdı çek<input type="file" accept="image/*" capture="environment" id="balBlank" hidden></label><label class="btn sec" style="flex:0 0 auto">Galeri<input type="file" accept="image/*" id="balBlank2" hidden></label></div>
+    <div class="btns"><label class="btn acc" style="flex:1">2) Cevap anahtarı kâğıdını çek<input type="file" accept="image/*" capture="environment" id="balKey" hidden></label><label class="btn sec" style="flex:0 0 auto">Galeri<input type="file" accept="image/*" id="balKey2" hidden></label></div>
+    <div id="balStat" class="hint" style="font-size:14px;color:var(--tx)"></div>
+    <div class="btns"><button class="btn sec" id="balShow">Izgarayı göster / düzelt</button></div>
+    <div class="hint">3) <b>Okut</b> sekmesinde öğrenci kâğıtlarını gösterin. Uygulama boş kâğıttaki başlıkları (A B C D E, yazılar) referans alarak her kâğıdı hizalar, anahtarla karşılaştırır.</div>
+    <div class="hint" style="margin-top:8px">Şablonsuz kullanım da mümkün:<br>• Soru ve şık sayısını yukarıda girin.<br>• Uygulama balon sütunlarını bulur ve her sütunun üstündeki <b>A B C D E</b> başlığına göre yönü ve şık sırasını belirler; soruları sütun sütun, başlıktan aşağı doğru numaralar (1–10, 11–20 …).<br>• Kâğıt yan ya da ters tutulabilir; yalnız tüm balonlar ve sütun başlıkları kamerada görünmeli.<br>• Cevap anahtarını <b>Anahtar</b> sekmesinde yazın ya da doldurulmuş anahtar kâğıdını okutun.</div>
   </div>
   <div class="card freeOnly" id="freeCard">
     <h2>Sınav kâğıdı şablonu</h2>
@@ -470,7 +476,7 @@ function regradeAll(){S.results.forEach(grade);persist();}
 /* ================= SEKME ================= */
 function showTab(t){closeEditor();document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.id==='t-'+t));
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
-  if(t!=='okut')stopCam();if(t==='okut'&&S.cfg.mode==='serbest')ensureFree().catch(e=>toast(e.message,5000));if(t==='anahtar')renderKeys();if(t==='sonuc')renderResults();if(t==='sinav')renderForm();window.scrollTo(0,0);}
+  if(t!=='okut')stopCam();if(t==='okut'&&usesFree())ensureFree().catch(e=>toast(e.message,5000));if(t==='anahtar')renderKeys();if(t==='sonuc')renderResults();if(t==='sinav')renderForm();window.scrollTo(0,0);}
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>showTab(b.dataset.t));
 
 /* ================= SINAV SEKMESİ ================= */
@@ -487,7 +493,7 @@ function readCfg(){const c=S.cfg,old=JSON.stringify([c.n,c.opts,c.booklets,c.idD
   if(old!==JSON.stringify([c.n,c.opts,c.booklets,c.idDigits])){for(const b in S.keys){S.keys[b]=fixKey(S.keys[b]);}}
   regradeAll();persist();renderHeader();}
 function fixKey(k){const n=S.cfg.n,ok=LET.slice(0,Math.max(S.cfg.opts,S.cfg.optsMax||0));const out=[];for(let i=0;i<n;i++){const v=k&&k[i];out.push(v&&ok.includes(v)?v:'');}return out;}
-['#cMode','#cTitle','#cN','#cOpts','#cBook','#cId','#cPen','#cPts','#cMulti'].forEach(s=>$(s).addEventListener('change',()=>{readCfg();renderCurBook();if(S.cfg.mode==='optik'){if(+$('#cN').value!==S.cfg.n)$('#cErr').textContent=`Bu ayarlarla en fazla ${S.cfg.n} soru sığar.`;$('#cN').value=S.cfg.n;renderForm();}else renderTpls();}));
+['#cMode','#cTitle','#cN','#cOpts','#cBook','#cId','#cPen','#cPts','#cMulti'].forEach(s=>$(s).addEventListener('change',()=>{readCfg();renderCurBook();renderBal();if(S.cfg.mode==='optik'){if(+$('#cN').value!==S.cfg.n)$('#cErr').textContent=`Bu ayarlarla en fazla ${S.cfg.n} soru sığar.`;$('#cN').value=S.cfg.n;renderForm();}else renderTpls();}));
 $('#aiOn').onchange=()=>{S.ai.on=$('#aiOn').checked;persist();};
 $('#aiKey').onchange=()=>{S.ai.key=$('#aiKey').value.trim();persist();};
 $('#aiModel').onchange=()=>{S.ai.model=$('#aiModel').value.trim()||DEF.ai.model;persist();};
@@ -512,7 +518,7 @@ function makePdf(jpg,iw,ih){const enc=new TextEncoder();const parts=[];let len=0
   const out=new Uint8Array(len);let o=0;for(const p of parts){out.set(p,o);o+=p.length;}return out;}
 
 /* ================= ANAHTAR SEKMESİ ================= */
-function renderKeys(){const box=$('#keyCards');box.innerHTML='';
+function renderKeys(){setTimeout(renderBal,0);const box=$('#keyCards');box.innerHTML='';
   for(const b of bookLetters()){const k=fixKey(S.keys[b]);const filled=k.filter(x=>x).length;
     const card=document.createElement('div');card.className='card';
     card.innerHTML=`<div class="keyHead"><h2 style="margin:0">${S.cfg.booklets>1?b+' kitapçığı':'Cevap anahtarı'}</h2><span class="pill ${filled===S.cfg.n?'ok':filled?'':'bad'}">${filled}/${S.cfg.n}</span></div><div class="kq"><input type="text" data-kq placeholder="Cevapları yazın: DCBCB ECCAD …" autocapitalize="characters" autocomplete="off"><button class="btn" data-kqa>Uygula</button></div><div class="hint">Boş soru için - yazın. Boşluk ve rakamlar yok sayılır.</div><div class="grid"></div><div class="btns"><button class="btn warn" data-clr>Temizle</button></div>`;
@@ -591,7 +597,7 @@ async function startCam(){
   try{const cap=track.getCapabilities?track.getCapabilities():{};if(cap.torch)$('#bTorch').style.display='';if(cap.focusMode&&cap.focusMode.includes('continuous'))track.applyConstraints({advanced:[{focusMode:'continuous'}]}).catch(()=>{});}catch(e){}
   try{if(navigator.wakeLock)wake=await navigator.wakeLock.request('screen');}catch(e){}
   $('#camIdle').style.display='none';v.style.display='block';$('#ov').style.display='block';$('#status').style.display='block';
-  if(S.cfg.mode==='serbest'){setStatus('Hazırlanıyor…');$('#status').style.display='block';try{await ensureFree(true);}catch(e){toast(e.message,5000);stopCam();return;}}
+  if(usesFree()){setStatus('Hazırlanıyor…');$('#status').style.display='block';try{await ensureFree(true);}catch(e){toast(e.message,5000);stopCam();return;}}
   running=true;$('#bCam').textContent='Durdur';$('#bCam').classList.add('warn');st.removed=true;st.miss=99;tick();}
 function camHelp(kind,detail){const el=$('#camHelp');if(!kind){el.style.display='none';return;}
   const loc=location.protocol+'//'+location.host+location.pathname;
@@ -612,7 +618,7 @@ function stopCam(){running=false;imgCap=null;if(stream)stream.getTracks().forEac
   $('#bCam').textContent='Kamerayı başlat';$('#bCam').classList.remove('warn');}
 function setStatus(t){$('#status').textContent=t;}
 let imgCap=null,capBusy=false,lastCap=0,pendSig=null;
-function tick(){if(!running)return;if(S.cfg.mode==='balon')return balonTick();const v=$('#video');
+function tick(){if(!running)return;if(S.cfg.mode==='balon'&&!balTpl())return balonTick();const v=$('#video');
   if(v.readyState>=2&&!busy&&v.videoWidth){busy=true;
     try{const vw=v.videoWidth,vh=v.videoHeight,sc=Math.min(1,2000/Math.max(vw,vh));if(pc.width!==Math.round(vw*sc)||pc.height!==Math.round(vh*sc)){pc.width=Math.round(vw*sc);pc.height=Math.round(vh*sc);}
       const ctx=pc.getContext('2d',{willReadFrequently:true});ctx.drawImage(v,0,0,pc.width,pc.height);
@@ -656,7 +662,7 @@ function handleLive(r,v,sc){
     setStatus(st.removed?(mode==='key'?'Anahtar kâğıdını gösterin':(S.cfg.mode==='serbest'?'Kâğıdı gösterin: sayfanın tamamı görünsün':'Kâğıdı gösterin: 4 köşe kare görünmeli')):'Kâğıt aranıyor…');return;}
   st.miss=0;drawOverlay(c,r);
   const sig=sigOf(r);if(sig===st.prev)st.streak++;else{st.streak=1;st.prev=sig;}
-  const need=S.cfg.mode==='serbest'?2:3;
+  const need=usesFree()?2:3;
   if(st.streak<need){setStatus(`Okunuyor… ${st.streak}/${need}`);return;}
   const isNew=st.removed||(sig!==st.saved&&!(st.savedAns&&r.id===st.savedId&&diffCount(r.answers,st.savedAns)<=2));
   if(isNew){
@@ -694,15 +700,16 @@ function beep(ok){try{navigator.vibrate&&navigator.vibrate(ok?80:[60,60,60]);}ca
 function flash(big,sub){const f=$('#flash');$('#flBig').textContent=big;$('#flNm').textContent=sub||'';f.style.display='flex';clearTimeout(flash._t);flash._t=setTimeout(()=>f.style.display='none',1300);}
 
 function readFile(input,m){const f=input.files&&input.files[0];input.value='';if(!f)return;initAudio();
-  if(S.cfg.mode==='serbest'&&!FREE.ready){toast('Görüntü kütüphanesi hazırlanıyor…',4000);ensureFree(true).then(()=>readImageFile(f,m)).catch(e=>toast(e.message,5000));return;}
+  if(usesFree()){if(!FREE.ready)toast('Görüntü kütüphanesi hazırlanıyor…',4000);ensureFree(true).then(()=>readImageFile(f,m)).catch(e=>toast(e.message,5000));return;}
   readImageFile(f,m);}
 function readImageFile(f,m){
   const img=new Image();img.onload=()=>{const sc=Math.min(1,(S.cfg.mode==='balon'?2600:2400)/Math.max(img.width,img.height));const cv=document.createElement('canvas');cv.width=Math.round(img.width*sc);cv.height=Math.round(img.height*sc);
     cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);URL.revokeObjectURL(img.src);
     const r=readAny(cv);
     if(r.bub&&r.ok&&r.grown){r.amb=(r.amb||0)+r.grown;toast(`Uyarı: ${r.grown} satır tahminle tamamlandı, sonucu kontrol edin`,4000);}
-    if(!r.ok){toast(r.partial?`Yalnızca ${r.found}/${S.cfg.n} soru bulundu. Tüm balonlar görünecek şekilde tekrar çekin.`:r.noHeader?'Sütun başlıkları (A B C D E) bulunamadı.':r.tooSmall?'Kâğıt çok küçük görünüyor, daha yakından çekin.':(S.cfg.mode==='serbest'?'Kâğıt şablonla eşleşmedi. Tüm sayfa net görünecek şekilde tekrar çekin.':'Form bulunamadı. 4 köşe kare ve sol üstteki küçük kare görünmeli.'),4000);return;}
-    if(m==='key'){applyKey(r);renderKeys();toast(r.free?`${r.booklet} kitapçığı, sayfa ${r.page}: anahtar okundu`:'Anahtar okundu');}
+    if(!r.ok){toast(r.partial?`Yalnızca ${r.found}/${S.cfg.n} soru bulundu. Tüm balonlar görünecek şekilde tekrar çekin.`:r.noHeader?'Sütun başlıkları (A B C D E) bulunamadı.':r.tooSmall?'Kâğıt çok küçük görünüyor, daha yakından çekin.':(usesFree()?'Kâğıt şablonla eşleşmedi. Tüm sayfa net görünecek şekilde tekrar çekin.':'Form bulunamadı. 4 köşe kare ve sol üstteki küçük kare görünmeli.'),4000);return;}
+    if(m==='key'){applyKey(r);renderKeys();renderBal();const got=r.answers.filter(a=>a&&a!=='*').length,multi=r.answers.map((a,i)=>a==='*'?i+1:0).filter(Boolean);
+      toast(balTpl()?`Boş kâğıtla ${got} fark bulundu → cevap anahtarı ${got}/${S.cfg.n}`+(multi.length?` · çift işaret: ${multi.join(', ')}`:'')+(got<S.cfg.n?' · eksikleri Anahtar sekmesinde tamamlayın':''):r.free?`${r.booklet} kitapçığı, sayfa ${r.page}: anahtar okundu`:'Anahtar okundu',6000);}
     else{const rec=saveStudent(r,cv,1);toast(rec.score==null?'Kaydedildi · '+rec.note:'Kaydedildi: '+fmt(rec.score)+' puan');}};
   img.src=URL.createObjectURL(f);}
 
@@ -834,16 +841,16 @@ async function tplCanvas(t){if(tplCv[t.id])return tplCv[t.id];const blob=await I
   const url=URL.createObjectURL(blob);const img=new Image();img.src=url;await img.decode();const c=document.createElement('canvas');c.width=img.width;c.height=img.height;c.getContext('2d').drawImage(img,0,0);URL.revokeObjectURL(url);tplCv[t.id]=c;return c;}
 function applyMode(){document.body.classList.toggle('serbest',S.cfg.mode==='serbest');document.body.classList.toggle('balon',S.cfg.mode==='balon');}
 function renderCurBook(){const sel=$('#curBook');if(!sel)return;const cur=sel.value||'A';sel.innerHTML=bookLetters().map(b=>`<option>${b}</option>`).join('');sel.value=bookLetters().includes(cur)?cur:'A';$('#curBookRow').style.display=(S.cfg.mode==='balon'&&S.cfg.booklets>1)?'':'none';}
-function freeSync(){if(S.cfg.mode!=='serbest')return;let n=0,o=0;for(const t of S.free.tpls)for(const q of t.qs){n=Math.max(n,q.n);o=Math.max(o,q.pts.length);}
+function freeSync(){if(S.cfg.mode!=='serbest')return;let n=0,o=0;for(const t of S.free.tpls.filter(x=>!x.bal))for(const q of t.qs){n=Math.max(n,q.n);o=Math.max(o,q.pts.length);}
   S.cfg.n=Math.max(1,n);S.cfg.optsMax=o;for(const b in S.keys)S.keys[b]=fixKey(S.keys[b]);}
 function nextQNum(t){let m=0;for(const x of S.free.tpls)if(x.booklet===t.booklet&&x.page<=t.page)for(const q of x.qs)m=Math.max(m,q.n);
   // sonraki sayfalarda soru varsa numaralar çakışmasın diye bu sayfanın son sorusundan devam et
   return m+1;}
 function renderTpls(){const box=$('#tplList');if(!box)return;
   const bs=bookLetters();$('#tplBook').innerHTML=bs.map(b=>`<option value="${b}">${S.cfg.booklets>1?b+' kitapçığı':'Tek tür'}</option>`).join('');
-  if(!S.free.tpls.length){box.innerHTML='<div class="hint">Henüz şablon yok.</div>';return;}
+  if(!S.free.tpls.filter(t=>!t.bal).length){box.innerHTML='<div class="hint">Henüz şablon yok.</div>';return;}
   box.innerHTML='';
-  S.free.tpls.slice().sort((a,b)=>a.booklet.localeCompare(b.booklet)||a.page-b.page).forEach(t=>{
+  S.free.tpls.filter(t=>!t.bal).sort((a,b)=>a.booklet.localeCompare(b.booklet)||a.page-b.page).forEach(t=>{
     const nq=t.qs.length,first=nq?t.qs[0].n:0,last=nq?t.qs[nq-1].n:0;const k=keyOf(t.booklet)||[];const kn=t.qs.filter(q=>k[q.n-1]).length;
     const d=document.createElement('div');d.className='tpl';
     d.innerHTML=`<img alt=""><div class="inf"><b>${S.cfg.booklets>1?t.booklet+' kitapçığı · ':''}Sayfa ${t.page}</b><span>${nq?`Soru ${first}–${last} (${nq} soru)`:'Şık işaretlenmedi'} · ${t.nameBox?'ad alanı ✓':'ad alanı yok'} · anahtar ${kn}/${nq}</span></div><button class="btn" data-e>Düzenle</button><button class="btn warn" data-d>Sil</button>`;
@@ -864,13 +871,13 @@ $('#tplFile').onchange=e=>{const f=e.target.files[0];e.target.value='';if(f)addT
 $('#tplFile2').onchange=e=>{const f=e.target.files[0];e.target.value='';if(f)addTemplate(f);};
 let FREE_T=[],lastTplId=null;
 async function ensureFree(withMsg){
-  const tpls=S.free.tpls.filter(t=>t.qs.length);if(!tpls.length)throw new Error('Önce Sınav sekmesinden şablon ekleyip şıkları işaretleyin.');
+  const tpls=S.free.tpls.filter(t=>t.qs.length&&(S.cfg.mode==='balon'?t.bal:!t.bal));if(!tpls.length)throw new Error(S.cfg.mode==='balon'?'Önce Sınav sekmesinden boş kâğıdı çekin.':'Önce Sınav sekmesinden şablon ekleyip şıkları işaretleyin.');
   if(!FREE.ready){if(withMsg)toast('Görüntü kütüphanesi yükleniyor (ilk seferde ~10 MB)…',6000);await FREE.loadCV();}
   FREE_T=[];for(const t of tpls){const c=await tplCanvas(t);FREE.prepare(t,c);FREE_T.push({tpl:t,canvas:c});}
   return FREE_T;}
 function readAny(cv){
-  if(S.cfg.mode==='balon')return BUB.read(cv,{n:S.cfg.n,opts:S.cfg.opts});
-  if(S.cfg.mode!=='serbest')return OMR.readCanvas(cv,S.cfg,L);
+  if(S.cfg.mode==='balon'&&!balTpl())return BUB.read(cv,{n:S.cfg.n,opts:S.cfg.opts});
+  if(!usesFree())return OMR.readCanvas(cv,S.cfg,L);
   if(!FREE.ready||!FREE_T.length)return{ok:false};
   const r=FREE.read(cv,FREE_T,{wantName:true,preferId:lastTplId});
   if(!r.ok)return r;lastTplId=r.tplId;
@@ -889,6 +896,40 @@ $('#tplImport').onchange=async e=>{const f=e.target.files[0];e.target.value='';i
     S.cfg=Object.assign({},DEF.cfg,d.cfg);S.free=Object.assign({},DEF.free,d.free);S.keys=d.keys||{};freeSync();persist();fillCfg();readCfg();renderTpls();toast('Şablon yüklendi');}
   catch(err){toast('Şablon yüklenemedi: '+err.message,4000);}};
 
+/* ================= BALONLU FORM: BOŞ KÂĞIT + ANAHTAR ================= */
+function balTpl(){return S.cfg.mode==='balon'?S.free.tpls.find(t=>t.qs.length&&t.bal):null;}
+function usesFree(){return S.cfg.mode==='serbest'||!!balTpl();}
+function renderBal(){const el=$('#balStat');if(!el)return;const t=balTpl();const k=fixKey(S.keys[curBook()]);const kn=k.filter(x=>x).length;
+  el.innerHTML=(t?`✓ Boş kâğıt: <b>${t.qs.length} soru</b> bulundu`:'• Boş kâğıt henüz çekilmedi')+'<br>'+(kn?`✓ Cevap anahtarı: <b>${kn}/${S.cfg.n}</b> <span style="font-family:ui-monospace,monospace">${k.map(v=>v||'-').join('').replace(/(.{5})/g,'$1 ')}</span>`:'• Cevap anahtarı henüz yok');
+  $('#balShow').style.display=t?'':'none';}
+async function addBlankBalon(f){
+  const url=URL.createObjectURL(f);const img=new Image();img.src=url;try{await img.decode();}catch(e){toast('Resim açılamadı');return;}
+  const k=Math.min(1,FREE.TL/Math.max(img.width,img.height));const c=document.createElement('canvas');c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);
+  c.getContext('2d').drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);
+  const r=BUB.read(c,{n:S.cfg.n,opts:S.cfg.opts});
+  const t={id:'t'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),booklet:'A',page:1,W:c.width,H:c.height,qs:[],nameBox:null,R:14,ver:1,bal:true};
+  let cc=c;
+  if(r.ok){// şablonu yalnız cevap alanına (başlıklar, ad satırı, balonlar) kırp
+    const allp=[].concat(...r.qpts).map(p=>[p[0],p[1]]).concat(r.nameQuad||[]);const sp=r.qpts[0]&&r.qpts[0][1]?Math.hypot(r.qpts[0][1][0]-r.qpts[0][0][0],r.qpts[0][1][1]-r.qpts[0][0][1]):30;
+    const xs=allp.map(p=>p[0]),ys=allp.map(p=>p[1]);const x0=Math.max(0,Math.floor(Math.min(...xs)-sp*4)),y0=Math.max(0,Math.floor(Math.min(...ys)-sp*4)),x1=Math.min(c.width,Math.ceil(Math.max(...xs)+sp*4)),y1=Math.min(c.height,Math.ceil(Math.max(...ys)+sp*4));
+    cc=document.createElement('canvas');cc.width=x1-x0;cc.height=y1-y0;cc.getContext('2d').drawImage(c,-x0,-y0);
+    r.qpts=r.qpts.map(pts=>pts.map(p=>[p[0]-x0,p[1]-y0,p[2]]));if(r.nameQuad)r.nameQuad=r.nameQuad.map(p=>[p[0]-x0,p[1]-y0]);
+    t.W=cc.width;t.H=cc.height;
+    t.qs=r.qpts.map((pts,i)=>({n:i+1,pts:pts.map(p=>[p[0],p[1]]),done:true,bubble:true}));
+    if(r.nameQuad){const xs=r.nameQuad.map(p=>p[0]),ys=r.nameQuad.map(p=>p[1]);const x0=Math.max(0,Math.min(...xs)),y0=Math.max(0,Math.min(...ys)),x1=Math.min(cc.width,Math.max(...xs)),y1=Math.min(cc.height,Math.max(...ys));if(x1-x0>20&&y1-y0>10){t.nameBox=[x0,y0,x1-x0,y1-y0];t.nameRot=r.nameRot||0;}}}
+  t.R=FREE.autoR(t);
+  const blob=await new Promise(res=>cc.toBlob(res,'image/jpeg',0.92));
+  for(const o of S.free.tpls.filter(x=>x.bal)){try{await IDB.del('img_'+o.id);}catch(e){}delete tplCv[o.id];if(FREE.ready)FREE.release(o.id);}
+  S.free.tpls=S.free.tpls.filter(x=>!x.bal);
+  try{await IDB.put('img_'+t.id,blob);}catch(e){toast('Kaydedilemedi: '+e.message,4000);return;}
+  tplCv[t.id]=cc;S.free.tpls.push(t);FREE_T=[];persist();renderBal();renderHeader();
+  if(r.ok){toast(`Boş kâğıtta ${t.qs.length} soru bulundu ✓ Şimdi cevap anahtarını çekin.`,4500);FREE.loadCV().catch(()=>{});}
+  else{toast(r.partial?`Yalnızca ${r.found}/${S.cfg.n} soru bulundu. Izgarayı elle kurun (3 dokunuş/sütun) ya da daha net çekin.`:'Balon ızgarası bulunamadı. Izgarayı elle kurun ya da daha net çekin.',6000);openEditor(t.id).then(()=>setEdMode('grid'));}}
+$('#balBlank').onchange=e=>{const f=e.target.files[0];e.target.value='';if(f)addBlankBalon(f);};
+$('#balBlank2').onchange=e=>{const f=e.target.files[0];e.target.value='';if(f)addBlankBalon(f);};
+$('#balKey').onchange=e=>{if(!balTpl()){e.target.value='';toast('Önce boş kâğıdı çekin');return;}readFile(e.target,'key');};
+$('#balKey2').onchange=e=>{if(!balTpl()){e.target.value='';toast('Önce boş kâğıdı çekin');return;}readFile(e.target,'key');};
+$('#balShow').onclick=()=>{const t=balTpl();if(t)openEditor(t.id);};
 /* ================= ŞABLON DÜZENLEYİCİ ================= */
 const ED={t:null,mode:'q',zoom:1,nameStart:null,hist:[]};
 async function openEditor(id){const t=S.free.tpls.find(x=>x.id===id);if(!t)return;ED.t=t;ED.mode=t.qs.length?'q':'q';ED.zoom=1;ED.nameStart=null;ED.hist=[];
@@ -1049,6 +1090,13 @@ function read(canvas,tpls,opt){
     const order=tpls.slice().sort((a,b)=>(b.tpl.id===opt.preferId)-(a.tpl.id===opt.preferId));
     for(const T of order){const P=prepare(T.tpl,T.canvas);const m=match(fs,P);if(!m||!m.h)continue;
       if(!best||m.inl>best.m.inl)best={m,T,P};if(m.inl>120&&m.inl/m.good>0.4)break;}
+    // 2. aşama: şablonun düştüğü bölgeyi kırpıp büyüterek yeniden eşleştir (uzaktan/tam sayfa çekimler)
+    if(best&&best.m.inl>=12){const hi0=inv3(best.m.h);if(hi0){const P0=best.P;const cs=[[0,0],[P0.W,0],[P0.W,P0.H],[0,P0.H]].map(([x,y])=>app(hi0,x,y));
+      const xs=cs.map(p=>p[0]),ys=cs.map(p=>p[1]);const mw=(Math.max(...xs)-Math.min(...xs))*0.12,mh=(Math.max(...ys)-Math.min(...ys))*0.12;
+      const rx0=Math.max(0,Math.floor(Math.min(...xs)-mw)),ry0=Math.max(0,Math.floor(Math.min(...ys)-mh)),rx1=Math.min(g.cols,Math.ceil(Math.max(...xs)+mw)),ry1=Math.min(g.rows,Math.ceil(Math.max(...ys)+mh));
+      if(rx1-rx0>50&&ry1-ry0>50&&(rx1-rx0)*(ry1-ry0)<0.8*g.cols*g.rows){const roi=g.roi(new cv.Rect(rx0,ry0,rx1-rx0,ry1-ry0));const fs2=features(roi);roi.delete();
+        for(let i=0;i<fs2.pts.length;i+=2){fs2.pts[i]+=rx0;fs2.pts[i+1]+=ry0;}
+        const m2=match(fs2,P0);fs2.desc.delete();if(m2&&m2.h&&m2.inl>=Math.max(20,best.m.inl*0.7))best.m=m2;}}}
     if(!best||best.m.inl<25||best.m.inl/best.m.good<0.15)return{ok:false,ms:performance.now()-t0};
     const{m,T,P}=best;const hi=inv3(m.h);if(!hi)return{ok:false};
     const corners=[[0,0],[P.W,0],[P.W,P.H],[0,P.H]].map(([x,y])=>app(hi,x,y));
@@ -1068,7 +1116,22 @@ function read(canvas,tpls,opt){
     const Tq=Math.max(opt.T||0.25,p70*2.2);
     // yerel hizalama: her balonlu soruyu şablondaki görünümüne göre küçük kaydırmayla oturt
     const local=T.tpl.qs.map(q=>[0,0]);
-    if(T.tpl.qs.some(q=>q.bubble)){for(let i=0;i<T.tpl.qs.length;i++){const q=T.tpl.qs[i];if(!q.bubble)continue;local[i]=localShift(P.mc,warpedC,q.pts,P.W,P.H);}
+    if(T.tpl.qs.some(q=>q.bubble)){
+      // önce: hizalanmış görüntüde gerçek balonları bul, her soruyu en yakın balonlara oturt (kâğıt kıvrımına dayanıklı)
+      const done=new Set();
+      try{if(typeof BUB!=='undefined'){const wc=document.createElement('canvas');cv.imshow(wc,warpedC);const bq=T.tpl.qs.filter(q=>q.bubble);
+        const br=BUB.read(wc,{n:bq.length,opts:bq[0].pts.length,allowPartial:true});
+        if(br.ok&&br.qpts&&br.qpts.length===bq.length){// aynı başlık mantığıyla numaralandığı için soru soru eşle
+          const sh=bq.map((q,k)=>{const bp=br.qpts[k];if(!bp||bp.length!==q.pts.length)return null;const sp=Math.hypot(q.pts[1][0]-q.pts[0][0],q.pts[1][1]-q.pts[0][1]);
+            const dx=q.pts.map((p0,o)=>bp[o][0]-p0[0]).sort((u,v)=>u-v),dy=q.pts.map((p0,o)=>bp[o][1]-p0[1]).sort((u,v)=>u-v);return{s:[dx[dx.length>>1],dy[dy.length>>1]],sp};});
+          // numaralama tutarlı mı? (soruların çoğunda kayma küçük olmalı)
+          const small=sh.filter(o=>o&&Math.hypot(o.s[0],o.s[1])<o.sp*0.75).length;
+          if(small>=bq.length*0.8)bq.forEach((q,k)=>{const o=sh[k];if(o&&Math.hypot(o.s[0],o.s[1])<o.sp*1.3){const i=T.tpl.qs.indexOf(q);local[i]=o.s;done.add(i);}});}
+        if(!done.size&&br.ok&&br.qpts){const cand=[].concat(...br.qpts);
+          T.tpl.qs.forEach((q,i)=>{if(!q.bubble)return;let sp=1e9;for(let a2=0;a2<q.pts.length;a2++)for(let b2=a2+1;b2<q.pts.length;b2++)sp=Math.min(sp,Math.hypot(q.pts[a2][0]-q.pts[b2][0],q.pts[a2][1]-q.pts[b2][1]));
+            const dx=[],dy=[];for(const[x,y]of q.pts){let bd=sp*0.6,bp=null;for(const c of cand){const d=Math.hypot(c[0]-x,c[1]-y);if(d<bd){bd=d;bp=c;}}if(bp){dx.push(bp[0]-x);dy.push(bp[1]-y);}}
+            if(dx.length>=Math.min(3,q.pts.length)){dx.sort((u,v)=>u-v);dy.sort((u,v)=>u-v);local[i]=[dx[dx.length>>1],dy[dy.length>>1]];done.add(i);}});}}}catch(e){}
+      for(let i=0;i<T.tpl.qs.length;i++){const q=T.tpl.qs[i];if(!q.bubble||done.has(i))continue;local[i]=localShift(P.mc,warpedC,q.pts,P.W,P.H);}
       // aykırı kaydırmaları komşu sorulara göre yumuşat
       smoothShifts(T.tpl.qs,local);}
     const answers={};let amb=0;
@@ -1081,7 +1144,9 @@ function read(canvas,tpls,opt){
     if(opt.debug){const c1=document.createElement('canvas');cv.imshow(c1,warped);const c2=document.createElement('canvas');const bin=new cv.Mat();cv.threshold(diff,bin,thr,255,cv.THRESH_BINARY);cv.imshow(c2,bin);bin.delete();opt.debug.warped=c1.toDataURL('image/jpeg',0.8);opt.debug.diff=c2.toDataURL('image/png');}
     let nameCrop=null;
     if(opt.wantName&&T.tpl.nameBox){const[x,y,w,h]=T.tpl.nameBox.map(Math.round);const rx=Math.max(0,x),ry=Math.max(0,y),rw=Math.min(P.W-rx,w),rh=Math.min(P.H-ry,h);
-      if(rw>10&&rh>10){const roi=warped.roi(new cv.Rect(rx,ry,rw,rh));nameCrop=document.createElement('canvas');cv.imshow(nameCrop,roi);roi.delete();}}
+      if(rw>10&&rh>10){const roi=warped.roi(new cv.Rect(rx,ry,rw,rh));nameCrop=document.createElement('canvas');cv.imshow(nameCrop,roi);roi.delete();
+        const rot=((T.tpl.nameRot||0)%360+360)%360;if(rot){const c2=document.createElement('canvas');const sw=rot===180;c2.width=sw?nameCrop.width:nameCrop.height;c2.height=sw?nameCrop.height:nameCrop.width;const x2=c2.getContext('2d');
+          x2.translate(c2.width/2,c2.height/2);x2.rotate(-rot*Math.PI/180);x2.drawImage(nameCrop,-nameCrop.width/2,-nameCrop.height/2);nameCrop=c2;}}}
     const R=T.tpl.R||14;const qpts=T.tpl.qs.map((q,qi)=>q.pts.map(([x0,y0])=>{const x=x0+local[qi][0],y=y0+local[qi][1];const p=app(hi,x,y),p2=app(hi,x+R,y);return[p[0],p[1],Math.hypot(p2[0]-p[0],p2[1]-p[1])];}));
     return{ok:true,free:true,tplId:T.tpl.id,booklet:T.tpl.booklet,page:T.tpl.page,answers,qf,T:bres&&T.tpl.qs.every(q=>q.bubble)?bres.Tb:Tq,amb,corners,qpts,nameCrop,inl:m.inl,good:m.good,ms:performance.now()-t0,id:''};
   }finally{g.delete();if(fs)fs.desc.delete();if(warped)warped.delete();if(sN)sN.delete();if(diff)diff.delete();if(mcS)mcS.delete();if(warpedC)warpedC.delete();}
@@ -1106,7 +1171,7 @@ function scoreQuestion(D,W,H,pts,thr,unit,R){
   return sc.map(v=>v/unit);}
 function localShift(tm,sm,pts,W,H){// şablon (tm) ve hizalanmış öğrenci (sm) min-kanal; soru bölgesinde en iyi kaydırma
   const n=pts.length;let sp=1e9;for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){const d=Math.hypot(pts[i][0]-pts[j][0],pts[i][1]-pts[j][1]);if(d<sp)sp=d;}if(n<2)sp=30;
-  const pad=sp*0.6,srch=Math.round(sp*0.7);
+  const pad=sp*0.6,srch=Math.round(sp*0.42);
   let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;for(const[x,y]of pts){x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y);}
   x0=Math.round(x0-pad);y0=Math.round(y0-pad);x1=Math.round(x1+pad);y1=Math.round(y1+pad);
   if(x0-srch<0||y0-srch<0||x1+srch>=W||y1+srch>=H)return[0,0];
@@ -1127,11 +1192,13 @@ function bubbleDark(M,W,H,pts){// balon içi koyuluğu, çevresindeki kâğıda 
   return pts.map(([x,y])=>{let s=0,c=0;const r=Math.ceil(rIn);for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){if(dx*dx+dy*dy>rIn*rIn)continue;s+=px(x+dx,y+dy);c++;}const m=s/c;
     const ring=[];for(let k=0;k<16;k++){const a=k*Math.PI/8;let v=0;for(let d=-1;d<=1;d++)v+=px(x+Math.cos(a)*(rR+d),y+Math.sin(a)*(rR+d));ring.push(v/3);}
     ring.sort((a,b)=>a-b);const P=ring[11];return Math.max(0,Math.min(1,(P-m)/Math.max(P,40)));});}
-function decideBubbles(qs,bd){// balonlu sorular için ortak eşik (Otsu) ve karar
-  const all=[].concat(...bd.filter(Boolean));let Tb=all.length>3?otsu(all):0.3;Tb=Math.max(0.2,Math.min(0.55,Tb));
-  const out={},flags={};qs.forEach((q,i)=>{const f=bd[i];if(!f)return;const idx=f.map((v,j)=>j).sort((a,b)=>f[b]-f[a]);const top=f[idx[0]];let a='';
-    if(top>=Tb){a=LET[idx[0]];if(f.length>1){const s2=f[idx[1]];if(s2>=Tb&&s2>=top*0.6)a='*';}}
-    out[q.n]=a;flags[q.n]=(top>=Tb*0.7&&top<Tb)||(a&&a!=='*'&&f.length>1&&f[idx[1]]>=Tb*0.85);});return{out,flags,Tb};}
+function decideBubbles(qs,bd){// balonlu sorular: her satırın boş-balon seviyesini (medyan) çıkar, sonra ortak eşik (Otsu)
+  const rel=bd.map(f=>{if(!f)return null;const med=f.slice().sort((x,y)=>x-y)[Math.floor(f.length/2)];return f.map(v=>Math.max(0,v-med));});
+  const all=[].concat(...rel.filter(Boolean));let Tb=all.length>3?otsu(all):0.2;Tb=Math.max(0.08,Math.min(0.45,Tb));
+  const out={},flags={};qs.forEach((q,i)=>{const f=rel[i];if(!f)return;const idx=f.map((v,j)=>j).sort((a,b)=>f[b]-f[a]);const top=f[idx[0]],s2v=f.length>1?f[idx[1]]:0;let a='';
+    if(top>=Tb){a=LET[idx[0]];if(s2v>=Tb&&s2v>=top*0.6)a='*';}
+    else if(top>=0.05&&top-s2v>=0.04){a=LET[idx[0]];flags[q.n]=true;}// hafif/yarım işaret
+    out[q.n]=a;flags[q.n]=flags[q.n]||(!a&&top>=Tb*0.6)||(a&&a!=='*'&&s2v>=Tb*0.8);});return{out,flags,Tb};}
 function extractKey(tpl,canvas){// şablon fotoğrafındaki dolu balonlardan cevap anahtarı
   const mc=toMinCh(canvas);try{const M=mc.data;const qs=tpl.qs.filter(q=>q.bubble);const bd=qs.map(q=>bubbleDark(M,canvas.width,canvas.height,q.pts));return decideBubbles(qs,bd).out;}finally{mc.delete();}}
 function autoR(tpl){// şık yarıçapı: aynı sorudaki şıklar arası en kısa mesafenin ~%42'si
@@ -1306,17 +1373,18 @@ function read(canvas,cfg){
   let nameCrop=null;try{const minDy=Math.min(...big.map(b=>b.dy)),minRx=Math.min(...big.map(b=>b.rx)),maxRx=Math.max(...big.map(b=>b.rx))+lo*(cfg.opts-1);
     const u0=minRx-lo*5,u1=maxRx+lo*4,v0=minDy-lq*7.5,v1=minDy-lq*1.3;const ow=Math.round(u1-u0),oh=Math.round(v1-v0);
     if(ow>20&&oh>10){nameCrop=document.createElement('canvas');nameCrop.width=ow;nameCrop.height=oh;const x=nameCrop.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,ow,oh);
-      x.setTransform(right[0],down[0],right[1],down[1],-u0,-v0);x.drawImage(canvas,0,0);}}catch(e){nameCrop=null;}
-  return{ok:true,bub:true,grown,answers,qd,T,amb,qpts,outlines,corners:outlines[0],nameCrop,found:qs.length,id:'',booklet:'A',ms:performance.now()-t0};
+      x.setTransform(right[0],down[0],right[1],down[1],-u0,-v0);x.drawImage(canvas,0,0);
+      var nameQuad=[[u0,v0],[u1,v0],[u1,v1],[u0,v1]].map(([u,v])=>[u*right[0]+v*down[0],u*right[1]+v*down[1]]);var nameRot=Math.round(Math.atan2(right[1],right[0])/(Math.PI/2))*90;}}catch(e){nameCrop=null;}
+  return{ok:true,bub:true,grown,nameQuad:typeof nameQuad!=='undefined'?nameQuad:null,nameRot:typeof nameRot!=='undefined'?nameRot:0,answers,qd,T,amb,qpts,outlines,corners:outlines[0],nameCrop,found:qs.length,id:'',booklet:'A',ms:performance.now()-t0};
 }
 return{read};
 })();
 
 /* ================= BAŞLAT ================= */
 for(const b in S.keys)S.keys[b]=fixKey(S.keys[b]);
-freeSync();fillCfg();applyMode();renderCurBook();renderHeader();requestAnimationFrame(renderForm);window.addEventListener('resize',()=>{if($('#t-sinav').classList.contains('on'))renderForm();});
+freeSync();fillCfg();applyMode();renderCurBook();renderBal();renderHeader();requestAnimationFrame(renderForm);window.addEventListener('resize',()=>{if($('#t-sinav').classList.contains('on'))renderForm();});
 if(!storageOK)toast('Tarayıcı hafızası kapalı: sayfa kapanınca veriler silinir',4000);
-window.__T={OMR,FREE,BUB,acceptBalon,layout,drawForm,get S(){return S},get L(){return L},buildXlsx,grade,saveStudent,makePdf,formCanvas,readAny,ensureFree,edTap,openEditor,closeEditor,IDB,addTemplate,accuracyRows,setEdMode};
+window.__T={OMR,FREE,BUB,acceptBalon,addBlankBalon,balTpl,layout,drawForm,get S(){return S},get L(){return L},buildXlsx,grade,saveStudent,makePdf,formCanvas,readAny,ensureFree,edTap,openEditor,closeEditor,IDB,addTemplate,accuracyRows,setEdMode};
 </script>
 </body>
 </html>
