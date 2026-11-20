@@ -93,7 +93,11 @@ input[type=text],input[type=number],select{width:100%;padding:10px;border:1px so
 <section class="view" id="v3">
   <div class="card">
     <h2>3. Öğrenci kâğıdı</h2>
-    <div class="btns"><label class="btn acc">Öğrenci kâğıdını çek<input type="file" accept="image/*" capture="environment" id="fStu" hidden></label><label class="btn sec" style="flex:0 0 auto">Galeri<input type="file" accept="image/*" id="fStu2" hidden></label></div>
+    <div class="btns"><button class="btn ok" id="camBtn">📷 Canlı okuma (fotoğraf çekmeden)</button></div>
+    <div id="camBox" style="display:none"><div class="cvwrap" style="position:relative"><video id="vid" playsinline muted autoplay style="width:100%;display:block;background:#000"></video><div id="camSt" style="position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);color:#fff;padding:8px 10px;font-weight:600;font-size:15px">Kamera açılıyor…</div></div>
+      <div class="hint">Kâğıdı kameraya tutun; cevap alanı (A B C D E yazan üst kısım) tamamen görünsün. Okuma netleşince sonuç aşağıda çıkar. Onaylayınca kaydedilir, sıradaki kâğıdı koyun.</div>
+      <div class="btns"><button class="btn warn" id="camStop">Kamerayı kapat</button></div></div>
+    <div class="btns"><label class="btn acc">Fotoğrafla oku<input type="file" accept="image/*" capture="environment" id="fStu" hidden></label><label class="btn sec" style="flex:0 0 auto">Galeri<input type="file" accept="image/*" id="fStu2" hidden></label></div>
     <div id="m3"></div>
     <div id="stuBox" style="display:none">
       <div class="score"><div class="big" id="sBig"></div><div><div id="sDyb" style="font-weight:600"></div><div class="dyb" id="sNote"></div></div></div>
@@ -103,7 +107,7 @@ input[type=text],input[type=number],select{width:100%;padding:10px;border:1px so
       <div class="cvwrap" id="w3"><canvas id="c3"></canvas></div>
       <div class="zoom"><button class="btn sec" data-z3="-">−</button><button class="btn sec" data-z3="+">+</button></div>
       <div class="hint">Yanlış okunan bir soru varsa öğrencinin işaretlediği balona dokunun (tekrar dokunmak kaldırır).</div>
-      <div class="btns"><button class="btn ok" id="sSave">Kaydet ve sıradaki kâğıt</button></div>
+      <div class="btns"><button class="btn ok" id="sSave">✓ Onayla, kaydet ve sıradaki</button></div>
       <div class="btns"><button class="btn sec" id="sSaveOnly">Kaydet</button><button class="btn warn" id="sDrop">Vazgeç</button></div>
     </div>
   </div>
@@ -401,6 +405,9 @@ function read(canvas,cfg){
   const rs=rings.map(r=>r.s).sort((a,b)=>a-b),ringMed=rs[Math.floor(rs.length/2)];
   const cand=rings.filter(r=>r.s>ringMed*0.6&&r.s<ringMed*1.6).concat(solids.filter(o=>o.s>=ringMed*0.9&&o.s<=ringMed*2.4));
   if(cand.length<cfg.opts*3)return{ok:false,ms:performance.now()-t0};
+  const centerDark=(x,y)=>{const r=Math.max(2,ringMed*0.22),R2=ringMed*0.95;const px=(X,Y)=>{X=Math.round(X);Y=Math.round(Y);return(X<0||Y<0||X>=w||Y>=h)?255:g[Y*w+X];};
+    const ring=[];for(let k=0;k<12;k++){const a=k*Math.PI/6;ring.push(px(x+Math.cos(a)*R2,y+Math.sin(a)*R2));}ring.sort((a,b)=>a-b);const P=ring[8];
+    let n=0,d=0;for(let dy=-Math.ceil(r);dy<=Math.ceil(r);dy++)for(let dx=-Math.ceil(r);dx<=Math.ceil(r);dx++){if(dx*dx+dy*dy>r*r)continue;n++;if(px(x+dx,y+dy)<P*0.7)d++;}return n?d/n:0;};
   // 2) ızgara vektörlerini bul (komşu farklarının en sık iki yönü)
   const cell=L*0.03,near=bucket(cand,cell);const vecs=[];
   cand.forEach((p,i)=>{const ns=near(p.x,p.y,p.s*5).filter(j=>j!==i).map(j=>{const q=cand[j];return{j,d:Math.hypot(q.x-p.x,q.y-p.y)};})
@@ -439,6 +446,16 @@ function read(canvas,cfg){
       runs.sort((a,b)=>b.length-a.length);const run=runs[0];if(run.length<1)return null;
       const ringsIn=q=>inW.filter(i=>coord[i][qK]===q&&cand[i].ring).length;
       while(run.length&&ringsIn(run[0])<2)run.shift();while(run.length&&ringsIn(run[run.length-1])<2)run.pop();if(!run.length)return null;
+      // uçtaki satır düzenli satır aralığına oturmuyorsa (başlık harfleri ~0,7 adımdadır) at
+      for(let it=0;it<4&&run.length>=4;it++){let changed=false;
+        for(const end of [0,1]){const q=end?run[run.length-1]:run[0];const inner=inW.filter(i=>{const c=coord[i][qK];return c!==q&&c>=run[0]&&c<=run[run.length-1];});
+          const f=lsq(inner.map(i=>[coord[i][oK],coord[i][qK],cand[i].x,cand[i].y]));if(!f)continue;
+          const ns=inW.filter(i=>coord[i][qK]===q);if(!ns.length)continue;
+          const p0=f(0,q),p1=f(0,q+1);const ux=p1[0]-p0[0],uy=p1[1]-p0[1],ul=Math.hypot(ux,uy);
+          let s2=0;for(const i of ns){const[x,y]=f(coord[i][oK],q);s2+=((cand[i].x-x)*ux+(cand[i].y-y)*uy)/ul;}s2/=ns.length;
+          if(Math.abs(s2)>0.15*ul){if(end)run.pop();else run.shift();changed=true;break;}}
+        if(!changed)break;}
+      // uçtaki satırda 3+ şık 'koyu' ise (başlık harfleri A B C D E) at — gerçek soru satırında en fazla 1 işaret olur
       const keep=inW.filter(i=>coord[i][qK]>=run[0]&&coord[i][qK]<=run[run.length-1]);if(keep.length<cfg.opts*Math.max(1,run.length)*0.7)return null;
       return{nodes:keep,o0f:best,o1f:best+cfg.opts-1};}).filter(Boolean).filter(b=>b.nodes.length>=cfg.opts);
   if(!big.length)return{ok:false,ms:performance.now()-t0};
@@ -472,6 +489,10 @@ function read(canvas,cfg){
   // 5) blokları sırala (önce sağa doğru sütunlar, sonra aşağı) ve soruları numarala
   for(const b of big){const firstQ=headAtMin?b.q0:b.q1;const[x,y]=b.f(oSign>0?b.o0:b.o1,firstQ);b.rx=x*right[0]+y*right[1];b.dy=x*down[0]+y*down[1];}
   big.sort((a,b)=>Math.abs(a.rx-b.rx)>lo*cfg.opts*0.6?a.rx-b.rx:a.dy-b.dy);
+  // fazla satır bulunduysa (başlık harfleri satır sanıldı): başlık tarafındaki ilk satırlardan en koyu olanı at
+  {const lenOf0=b=>b.q1-b.q0+1;let tot=big.reduce((s,b)=>s+lenOf0(b),0);
+    const headStat=b=>{const q=headAtMin?b.q0:b.q1;const v=[];for(let o=b.o0;o<=b.o1;o++){const[x,y]=b.f(o,q);v.push(centerDark(x,y));}v.sort((a,c)=>a-c);return v[Math.floor(v.length/2)];};
+    while(tot>cfg.n){let bb=null,bv=-1;for(const b of big){if(lenOf0(b)<2)continue;const v=headStat(b);if(v>bv){bv=v;bb=b;}}if(!bb||bv<0.15)break;if(headAtMin)bb.q0++;else bb.q1--;tot--;}}
   // eksik satırlar: kısa blokları standart sütun uzunluğuna, gerekirse son bloğu soru sayısına tamamla
   const lenOf=b=>b.q1-b.q0+1;let total=big.reduce((s,b)=>s+lenOf(b),0);const std=Math.max(...big.map(lenOf));
   const inImg=(x,y)=>x>=0&&y>=0&&x<w&&y<h;
@@ -508,6 +529,7 @@ function read(canvas,cfg){
 }
 return{read};
 })();
+
 const IDB={p:null,db(){if(!this.p)this.p=new Promise((res,rej)=>{const r=indexedDB.open('optik',1);r.onupgradeneeded=()=>r.result.createObjectStore('img');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});return this.p;},
   async put(k,v){const db=await this.db();return new Promise((res,rej)=>{const tx=db.transaction('img','readwrite');tx.objectStore('img').put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);});},
   async get(k){const db=await this.db();return new Promise((res,rej)=>{const r=db.transaction('img').objectStore('img').get(k);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});},
@@ -644,11 +666,38 @@ async function onStu(f){if(!S.keyOk){toast('Önce cevap anahtarını onaylayın'
   try{await cvReady();busy(true,'Öğrenci kâğıdı okunuyor…');await sleep(30);
     const c=await loadFile(f,2400);const tc=await getTplCanvas();const t0=performance.now();const r=FREE.read(c,[{tpl:tplObj(),canvas:tc}],{wantWarp:true,wantName:true});busy(false);
     if(!r.ok){msg('#m3','bad',r.tooSmall?'Kâğıt çok küçük görünüyor, daha yakından çekin.':'Kâğıt boş kâğıtla eşleşmedi. Cevap alanının tamamı görünecek şekilde tekrar çekin.');$('#stuBox').style.display='none';return;}
-    const ans=[];for(let i=0;i<S.cfg.n;i++)ans.push(r.answers[i+1]||'');
-    cur={r,ans,auto:ans.slice(),name:r.nameCrop,ms:Math.round(performance.now()-t0)};msg('#m3','','');
-    $('#sNameTxt').value='';if(cur.name){$('#sName').src=cur.name.toDataURL('image/jpeg',0.8);$('#sName').style.display='';}else $('#sName').style.display='none';
-    drawStu();$('#stuBox').style.display='';$('#stuBox').scrollIntoView({behavior:'smooth'});}
+    showStu(r,Math.round(performance.now()-t0));}
   catch(e){busy(false);msg('#m3','bad','Hata: '+esc(e.message));}}
+function showStu(r,ms){const ans=[];for(let i=0;i<S.cfg.n;i++)ans.push(r.answers[i+1]||'');
+  cur={r,ans,auto:ans.slice(),name:r.nameCrop,ms};msg('#m3','','');
+  $('#sNameTxt').value='';if(cur.name){$('#sName').src=cur.name.toDataURL('image/jpeg',0.8);$('#sName').style.display='';}else $('#sName').style.display='none';
+  drawStu();$('#stuBox').style.display='';$('#stuBox').scrollIntoView({behavior:'smooth'});}
+/* ---- canlı kamera: sürekli oku, iki ardışık aynı okuma → dondur, öğretmen onaylasın ---- */
+const CAM={stream:null,on:false,paused:false,last:null,hits:0,needChange:null,busy:false};
+function camSt(t){$('#camSt').textContent=t;}
+async function camStart(){if(!S.keyOk){toast('Önce cevap anahtarını onaylayın');return;}
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){toast('Bu tarayıcı kamerayı desteklemiyor (https gerekli)');return;}
+  try{CAM.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}},audio:false});}
+  catch(e){toast('Kamera açılamadı: '+e.message);return;}
+  const v=$('#vid');v.srcObject=CAM.stream;try{await v.play();}catch(e){}
+  try{const tr=CAM.stream.getVideoTracks()[0];const cap=tr.getCapabilities?tr.getCapabilities():{};if(cap.focusMode&&cap.focusMode.includes('continuous'))await tr.applyConstraints({advanced:[{focusMode:'continuous'}]});}catch(e){}
+  $('#camBox').style.display='';$('#camBtn').style.display='none';CAM.on=true;CAM.paused=false;CAM.last=null;CAM.hits=0;CAM.needChange=null;
+  await cvReady();camSt('Kâğıdı gösterin…');camLoop();}
+function camStop(){CAM.on=false;if(CAM.stream)CAM.stream.getTracks().forEach(t=>t.stop());CAM.stream=null;$('#camBox').style.display='none';$('#camBtn').style.display='';}
+function camResume(requireChange){CAM.paused=false;CAM.last=null;CAM.hits=0;CAM.needChange=requireChange||null;
+  camSt(requireChange?'Kaydedildi ✓ Sıradaki kâğıdı koyun…':'Kâğıdı gösterin…');if(CAM.on)$('#camBox').scrollIntoView({behavior:'smooth'});}
+async function camLoop(){while(CAM.on){await sleep(120);if(CAM.paused||CAM.busy||document.hidden||!$('#v3').classList.contains('on'))continue;const v=$('#vid');if(!v.videoWidth)continue;
+    CAM.busy=true;try{const k=Math.min(1,1600/Math.max(v.videoWidth,v.videoHeight));const c=document.createElement('canvas');c.width=Math.round(v.videoWidth*k);c.height=Math.round(v.videoHeight*k);
+      c.getContext('2d').drawImage(v,0,0,c.width,c.height);const tc=await getTplCanvas();const t0=performance.now();
+      const r=FREE.read(c,[{tpl:tplObj(),canvas:tc}],{wantWarp:true,wantName:true});if(!CAM.on||CAM.paused){CAM.busy=false;continue;}
+      if(!r.ok){CAM.last=null;CAM.hits=0;if(CAM.needChange)CAM.needChange=null;camSt('Kâğıt aranıyor… cevap alanı tam görünsün');}
+      else{let sig='';for(let i=1;i<=S.cfg.n;i++)sig+=(r.answers[i]||'-');
+        if(CAM.needChange&&sig===CAM.needChange){camSt('Bu kâğıt kaydedildi. Sıradakini koyun…');}
+        else{CAM.needChange=null;if(sig===CAM.last)CAM.hits++;else{CAM.last=sig;CAM.hits=1;}
+          if(CAM.hits>=2){CAM.paused=true;try{navigator.vibrate&&navigator.vibrate(120);}catch(e){}camSt('Okundu ✓ Aşağıda kontrol edip onaylayın');showStu(r,Math.round(performance.now()-t0));}
+          else camSt('Okunuyor… sabit tutun');}}}
+    catch(e){camSt('Hata: '+e.message);}CAM.busy=false;}}
+$('#camBtn').onclick=camStart;$('#camStop').onclick=camStop;
 function drawStu(){if(!cur)return;const g=grade(cur.ans);$('#sBig').textContent=fmt(g.score);$('#sDyb').textContent=`${g.D} doğru · ${g.Y} yanlış · ${g.B} boş`;
   const multi=cur.ans.map((a,i)=>a==='*'?i+1:0).filter(Boolean);const amb=cur.r.amb||0;
   $('#sNote').textContent=(multi.length?`Çift işaret: ${multi.join(', ')}. `:'')+(amb?`${amb} belirsiz işaret, kontrol edin.`:'');
@@ -667,9 +716,9 @@ function thumb(cv){if(!cv)return null;const t=document.createElement('canvas');c
 function saveCur(){if(!cur)return false;const g=grade(cur.ans);
   S.results.push({id:Date.now().toString(36),name:$('#sNameTxt').value.trim(),answers:cur.ans.slice(),auto:cur.auto,ms:cur.ms,...g,img:thumb(cur.name),t:new Date().toISOString(),edited:cur.ans.join()!==cur.auto.join()});
   persist();stepState();toast(`Kaydedildi: ${fmt(g.score)} puan`);cur=null;$('#stuBox').style.display='none';return true;}
-$('#sSave').onclick=()=>{if(saveCur())$('#fStu').click();};
-$('#sSaveOnly').onclick=()=>saveCur();
-$('#sDrop').onclick=()=>{cur=null;$('#stuBox').style.display='none';};
+$('#sSave').onclick=()=>{const sig=cur?cur.auto.map(a=>a||'-').join(''):null;if(!saveCur())return;if(CAM.on)camResume(sig);else $('#fStu').click();};
+$('#sSaveOnly').onclick=()=>{const sig=cur?cur.auto.map(a=>a||'-').join(''):null;if(saveCur()&&CAM.on)camResume(sig);};
+$('#sDrop').onclick=()=>{cur=null;$('#stuBox').style.display='none';if(CAM.on)camResume(null);};
 $('#fStu').onchange=e=>{const f=e.target.files[0];e.target.value='';if(f)onStu(f);};
 $('#fStu2').onchange=e=>{const f=e.target.files[0];e.target.value='';if(f)onStu(f);};
 
