@@ -95,7 +95,7 @@ input[type=text],input[type=number],select{width:100%;padding:10px;border:1px so
     <h2>3. Öğrenci kâğıdı</h2>
     <div class="btns"><button class="btn ok" id="camBtn">📷 Canlı okuma (fotoğraf çekmeden)</button></div>
     <div id="camBox" style="display:none"><div class="cvwrap" style="position:relative"><video id="vid" playsinline muted autoplay style="width:100%;display:block;background:#000"></video><div id="camSt" style="position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);color:#fff;padding:8px 10px;font-weight:600;font-size:15px">Kamera açılıyor…</div></div>
-      <div class="hint">Kâğıdı kameraya tutun; cevap alanı (A B C D E yazan üst kısım) tamamen görünsün. Okuma netleşince sonuç aşağıda çıkar. Onaylayınca kaydedilir, sıradaki kâğıdı koyun.</div>
+      <div class="hint">Telefonu kâğıdın üst kısmına (cevap alanı) yaklaştırın, balonlar ekranı doldursun; durmanıza gerek yok, kendisi yakalar. Okuma netleşince sonuç aşağıda çıkar. Onaylayınca kaydedilir, sıradaki kâğıdı koyun.</div>
       <div class="btns"><button class="btn warn" id="camStop">Kamerayı kapat</button></div></div>
     <div class="btns"><label class="btn acc">Fotoğrafla oku<input type="file" accept="image/*" capture="environment" id="fStu" hidden></label><label class="btn sec" style="flex:0 0 auto">Galeri<input type="file" accept="image/*" id="fStu2" hidden></label></div>
     <div id="m3"></div>
@@ -335,11 +335,36 @@ function decideBubbles(qs,bd){// balonlu sorular: her satırın boş-balon seviy
     out[q.n]=a;flags[q.n]=flags[q.n]||(!a&&top>=Tb*0.6)||(a&&a!=='*'&&s2v>=Tb*0.8);});return{out,flags,Tb};}
 function extractKey(tpl,canvas){// şablon fotoğrafındaki dolu balonlardan cevap anahtarı
   const mc=toMinCh(canvas);try{const M=mc.data;const qs=tpl.qs.filter(q=>q.bubble);const bd=qs.map(q=>bubbleDark(M,canvas.width,canvas.height,q.pts));return decideBubbles(qs,bd).out;}finally{mc.delete();}}
+/* hızlı canlı okuma: şablonsuz balon ızgarası (BUB) → 125 balon noktasıyla şablona homografi → aynı karar kuralı */
+function fast(canvas,tpl,opt){opt=opt||{};const t0=performance.now();const bq=tpl.qs.filter(q=>q.bubble);
+  if(!bq.length||typeof BUB==='undefined')return{ok:false};
+  const br=BUB.read(canvas,{n:bq.length,opts:bq[0].pts.length});
+  if(!br.ok||!br.qpts||br.qpts.length!==bq.length)return{ok:false,found:br.found||0,ms:performance.now()-t0};
+  const S=[],D=[];bq.forEach((q,k)=>{const bp=br.qpts[k];if(!bp||bp.length!==q.pts.length)return;q.pts.forEach((p,o)=>{S.push(bp[o][0],bp[o][1]);D.push(p[0],p[1]);});});
+  const N=S.length/2;if(N<bq.length*3)return{ok:false,ms:performance.now()-t0};
+  const sp=Math.hypot(bq[0].pts[1][0]-bq[0].pts[0][0],bq[0].pts[1][1]-bq[0].pts[0][1]);
+  const sM=cv.matFromArray(N,1,cv.CV_32FC2,S),dM=cv.matFromArray(N,1,cv.CV_32FC2,D),mask=new cv.Mat();
+  const Hh=cv.findHomography(sM,dM,cv.RANSAC,sp*0.3,mask);let inl=0;for(let i=0;i<mask.rows;i++)if(mask.data[i])inl++;sM.delete();dM.delete();mask.delete();
+  if(Hh.empty()||inl<N*0.85){Hh.delete();return{ok:false,ms:performance.now()-t0};}
+  const h=Array.from(Hh.data64F);const W=tpl.W,H=tpl.H;
+  const src=cv.imread(canvas),wm=new cv.Mat();cv.warpPerspective(src,wm,Hh,new cv.Size(W,H),cv.INTER_LINEAR,cv.BORDER_CONSTANT,new cv.Scalar(255,255,255,255));Hh.delete();src.delete();
+  const warpC=document.createElement('canvas');cv.imshow(warpC,wm);
+  const tq=tpl.qs.map(q=>q.pts.map(p=>p.slice()));bq.forEach((q,k)=>{const bp=br.qpts[k];if(!bp||bp.length!==q.pts.length)return;tq[tpl.qs.indexOf(q)]=bp.map(([x,y])=>app(h,x,y));});
+  const ch=new cv.MatVector();cv.split(wm,ch);const mc=new cv.Mat();cv.min(ch.get(0),ch.get(1),mc);const bb=ch.get(2);cv.min(mc,bb,mc);bb.delete();ch.delete();
+  let res,bd;try{bd=tpl.qs.map((q,i)=>q.bubble?bubbleDark(mc.data,W,H,tq[i]):null);res=decideBubbles(bq,bd.filter(Boolean));}finally{mc.delete();}
+  let amb=0;bq.forEach(q=>{if(res.flags[q.n])amb++;});
+  let nameCrop=null;
+  if(opt.wantName&&tpl.nameBox){const[x,y,w,hh]=tpl.nameBox.map(Math.round);const rx=Math.max(0,x),ry=Math.max(0,y),rw=Math.min(W-rx,w),rh=Math.min(H-ry,hh);
+    if(rw>10&&rh>10){const roi=wm.roi(new cv.Rect(rx,ry,rw,rh));nameCrop=document.createElement('canvas');cv.imshow(nameCrop,roi);roi.delete();
+      const rot=((tpl.nameRot||0)%360+360)%360;if(rot){const c2=document.createElement('canvas');const sw=rot===180;c2.width=sw?nameCrop.width:nameCrop.height;c2.height=sw?nameCrop.height:nameCrop.width;const x2=c2.getContext('2d');
+        x2.translate(c2.width/2,c2.height/2);x2.rotate(-rot*Math.PI/180);x2.drawImage(nameCrop,-nameCrop.width/2,-nameCrop.height/2);nameCrop=c2;}}}
+  wm.delete();
+  return{ok:true,fast:true,warp:warpC,tq,answers:res.out,qf:bd,amb,T:res.Tb,nameCrop,inl,ms:performance.now()-t0};}
 function autoR(tpl){// şık yarıçapı: aynı sorudaki şıklar arası en kısa mesafenin ~%42'si
   const ds=[];for(const q of tpl.qs){for(let i=1;i<q.pts.length;i++){const a=q.pts[i-1],b=q.pts[i];ds.push(Math.hypot(a[0]-b[0],a[1]-b[1]));}}
   ds.sort((a,b)=>a-b);const med=ds.length?ds[Math.floor(ds.length/2)]:60;
   return Math.max(8,Math.min(med*0.42,Math.max(tpl.W,tpl.H)*0.012));}
-return{loadCV,read,prepare,release,autoR,extractKey,get ready(){return!!cv;},TL};
+return{loadCV,read,fast,prepare,release,autoR,extractKey,get ready(){return!!cv;},TL};
 })();
 /* ================= BALONLU FORM: ŞABLONSUZ OTOMATİK OKUYUCU =================
    Balon ızgarasını bulur; her bloğun üstündeki "A B C D E" başlığından yönü ve şık sırasını belirler. */
@@ -686,14 +711,16 @@ async function camStart(){if(!S.keyOk){toast('Önce cevap anahtarını onaylayı
 function camStop(){CAM.on=false;if(CAM.stream)CAM.stream.getTracks().forEach(t=>t.stop());CAM.stream=null;$('#camBox').style.display='none';$('#camBtn').style.display='';}
 function camResume(requireChange){CAM.paused=false;CAM.last=null;CAM.hits=0;CAM.needChange=requireChange||null;
   camSt(requireChange?'Kaydedildi ✓ Sıradaki kâğıdı koyun…':'Kâğıdı gösterin…');if(CAM.on)$('#camBox').scrollIntoView({behavior:'smooth'});}
-async function camLoop(){while(CAM.on){await sleep(120);if(CAM.paused||CAM.busy||document.hidden||!$('#v3').classList.contains('on'))continue;const v=$('#vid');if(!v.videoWidth)continue;
-    CAM.busy=true;try{const k=Math.min(1,1600/Math.max(v.videoWidth,v.videoHeight));const c=document.createElement('canvas');c.width=Math.round(v.videoWidth*k);c.height=Math.round(v.videoHeight*k);
+async function camLoop(){while(CAM.on){await sleep(30);if(CAM.paused||CAM.busy||document.hidden||!$('#v3').classList.contains('on'))continue;const v=$('#vid');if(!v.videoWidth)continue;
+    CAM.busy=true;try{const k=Math.min(1,1920/Math.max(v.videoWidth,v.videoHeight));const c=document.createElement('canvas');c.width=Math.round(v.videoWidth*k);c.height=Math.round(v.videoHeight*k);
       c.getContext('2d').drawImage(v,0,0,c.width,c.height);const tc=await getTplCanvas();const t0=performance.now();
-      const r=FREE.read(c,[{tpl:tplObj(),canvas:tc}],{wantWarp:true,wantName:true});if(!CAM.on||CAM.paused){CAM.busy=false;continue;}
-      if(!r.ok){CAM.last=null;CAM.hits=0;if(CAM.needChange)CAM.needChange=null;camSt('Kâğıt aranıyor… cevap alanı tam görünsün');}
+      let r=FREE.fast(c,tplObj(),{wantName:true});let slow=false;
+      if(!r.ok){CAM.fails=(CAM.fails||0)+1;if(CAM.fails>=6){CAM.fails=0;camSt('Ayrıntılı okunuyor…');await sleep(10);r=FREE.read(c,[{tpl:tplObj(),canvas:tc}],{wantWarp:true,wantName:true});slow=r.ok;}}else CAM.fails=0;
+      if(!CAM.on||CAM.paused){CAM.busy=false;continue;}
+      if(!r.ok){CAM.last=null;CAM.hits=0;if(CAM.needChange)CAM.needChange=null;camSt('Kâğıt aranıyor… cevap alanını ekrana doldurun');}
       else{let sig='';for(let i=1;i<=S.cfg.n;i++)sig+=(r.answers[i]||'-');
         if(CAM.needChange&&sig===CAM.needChange){camSt('Bu kâğıt kaydedildi. Sıradakini koyun…');}
-        else{CAM.needChange=null;if(sig===CAM.last)CAM.hits++;else{CAM.last=sig;CAM.hits=1;}
+        else{CAM.needChange=null;if(sig===CAM.last)CAM.hits++;else{CAM.last=sig;CAM.hits=1;}if(slow&&!r.amb)CAM.hits=2;
           if(CAM.hits>=2){CAM.paused=true;try{navigator.vibrate&&navigator.vibrate(120);}catch(e){}camSt('Okundu ✓ Aşağıda kontrol edip onaylayın');showStu(r,Math.round(performance.now()-t0));}
           else camSt('Okunuyor… sabit tutun');}}}
     catch(e){camSt('Hata: '+e.message);}CAM.busy=false;}}
