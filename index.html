@@ -114,7 +114,7 @@ body:not(.serbest) .freeOnly{display:none!important}
   </div>
   <div class="card freeOnly" id="freeCard">
     <h2>Sınav kâğıdı şablonu</h2>
-    <div class="hint" style="margin-top:0">1) Sınav kâğıdının <b>boş</b> hâlinin fotoğrafını düz ve tüm sayfa görünecek şekilde çekin.<br>2) <b>Düzenle</b>'ye girip her sorunun şıklarına dokunun (A, B, C…). Kalıp açıkken sonraki sorularda yalnız A'ya dokunmanız yeterli.<br>3) <b>Ad alanı</b> sekmesinde öğrencinin adını yazdığı yeri işaretleyin.<br>4) <b>Anahtar</b> sekmesinde doğru şıklara dokunun ya da Anahtar ekranından işaretli kâğıdı okutun.<br>Sayfa ya da kitapçık başına ayrı fotoğraf ekleyin.</div>
+    <div class="hint" style="margin-top:0">1) Sınav kâğıdının <b>boş</b> hâlinin fotoğrafını düz ve tüm sayfa görünecek şekilde çekin.<br>Balonlu formda boş kâğıt yerine <b>doldurulmuş cevap anahtarını</b> da çekebilirsiniz: ızgarayı kurunca anahtar kendiliğinden çıkarılır.<br>2) <b>Düzenle</b>'ye girip şıkları gösterin. Balonlu (optik) formlarda <b>Izgara</b> aracı: her sütun için ilk sorunun A'sı, aynı sorunun son şıkkı ve sütundaki son sorunun A'sı (3 dokunuş). Diğer kâğıtlarda <b>Şıklar</b> ile şıklara dokunun; kalıp açıkken sonraki sorularda yalnız A yeterli.<br>3) <b>Ad alanı</b> sekmesinde öğrencinin adını yazdığı yeri işaretleyin.<br>4) <b>Anahtar</b> sekmesinde doğru şıklara dokunun ya da Anahtar ekranından işaretli kâğıdı okutun.<br>Sayfa ya da kitapçık başına ayrı fotoğraf ekleyin.</div>
     <div id="tplList" style="margin-top:8px"></div>
     <div class="row" style="margin-top:8px;align-items:flex-end">
       <div style="flex:0 0 38%"><label class="f">Kitapçık</label><select id="tplBook"></select></div>
@@ -191,8 +191,8 @@ body:not(.serbest) .freeOnly{display:none!important}
 <div id="modal"><div class="sheet" id="sheet"></div></div>
 <div class="ed" id="editor">
   <div class="edBar"><div class="edT" id="edTitle"></div><button class="btn" id="edDone" style="background:#fff;color:var(--p)">Bitti</button></div>
-  <div class="edModes"><button data-m="q" class="on">Şıklar</button><button data-m="name">Ad alanı</button><button data-m="key">Anahtar</button></div>
-  <div class="edTools"><button class="btn sec" id="edZo">−</button><button class="btn sec" id="edZi">+</button><button class="btn sec" id="edUndo">Geri al</button><button class="btn sec" id="edNext">Soru bitti</button><label id="edPatL"><input type="checkbox" id="edPat"> Kalıp</label></div>
+  <div class="edModes"><button data-m="grid">Izgara</button><button data-m="q" class="on">Şıklar</button><button data-m="name">Ad alanı</button><button data-m="key">Anahtar</button></div>
+  <div class="edTools"><button class="btn sec" id="edZo">−</button><button class="btn sec" id="edZi">+</button><button class="btn sec" id="edUndo">Geri al</button><button class="btn sec" id="edNext">Soru bitti</button><button class="btn sec" id="edAuto">Bu fotoğraftan çıkar</button><label id="edPatL"><input type="checkbox" id="edPat"> Kalıp</label></div>
   <div class="edMsg" id="edMsg"></div>
   <div class="edScroll" id="edScroll"><canvas id="edCv"></canvas></div>
 </div>
@@ -844,20 +844,34 @@ async function openEditor(id){const t=S.free.tpls.find(x=>x.id===id);if(!t)retur
 function closeEditor(){if($('#editor').style.display!=='flex')return;$('#editor').style.display='none';document.body.style.overflow='';ED.t=null;renderTpls();renderHeader();}
 $('#edDone').onclick=closeEditor;
 document.querySelectorAll('.edModes button').forEach(b=>b.onclick=()=>setEdMode(b.dataset.m));
-function setEdMode(m){ED.mode=m;ED.nameStart=null;document.querySelectorAll('.edModes button').forEach(b=>b.classList.toggle('on',b.dataset.m===m));
-  $('#edNext').style.display=m==='q'?'':'none';$('#edPatL').style.display=m==='q'?'':'none';edDraw();}
+function setEdMode(m){ED.mode=m;ED.nameStart=null;ED.grid=[];document.querySelectorAll('.edModes button').forEach(b=>b.classList.toggle('on',b.dataset.m===m));
+  $('#edNext').style.display=m==='q'?'':'none';$('#edAuto').style.display=m==='key'?'':'none';$('#edPatL').style.display=m==='q'?'':'none';edDraw();}
 $('#edZi').onclick=()=>{ED.zoom=Math.min(4,ED.zoom*1.5);edZoom();};$('#edZo').onclick=()=>{ED.zoom=Math.max(1,ED.zoom/1.5);edZoom();};
 function edZoom(){const sc=$('#edScroll'),cv=$('#edCv');const fx=(sc.scrollLeft+sc.clientWidth/2)/cv.clientWidth,fy=(sc.scrollTop+sc.clientHeight/2)/cv.clientHeight;
   cv.style.width=(ED.zoom*100)+'%';sc.scrollLeft=fx*cv.clientWidth-sc.clientWidth/2;sc.scrollTop=fy*cv.clientHeight-sc.clientHeight/2;}
 $('#edPat').onchange=()=>{S.free.pattern=$('#edPat').checked;persist();edMsg();};
+$('#edAuto').onclick=()=>{if(!ED.t.qs.some(q=>q.bubble)){toast('Bu özellik Izgara ile kurulan balonlu sorularda çalışır');return;}autoKeyFromTpl(ED.t,false);};
 $('#edUndo').onclick=()=>{const h=ED.hist.pop();if(!h){toast('Geri alınacak işlem yok');return;}const o=JSON.parse(h);ED.t.qs=o.qs;ED.t.nameBox=o.nameBox;if(o.key)S.keys=o.key;edCommit();};
 $('#edNext').onclick=()=>{const q=ED.t.qs[ED.t.qs.length-1];if(!q||!q.pts.length){toast('Önce bir şıkka dokunun');return;}snap();q.done=true;edCommit();};
+async function autoKeyFromTpl(t,quiet){// şablon dolu bir anahtar kâğıdıysa cevapları çıkar
+  try{if(!FREE.ready){if(!quiet)toast('Görüntü kütüphanesi yükleniyor…',4000);await FREE.loadCV();}
+    const c=await tplCanvas(t);const ans=FREE.extractKey(t,c);const ns=Object.keys(ans);const filled=ns.filter(n=>ans[n]&&ans[n]!=='*');
+    if(!ns.length)return;
+    if(quiet&&filled.length<ns.length*0.6)return;// boş şablon: sessiz geç
+    if(!filled.length){toast('Bu fotoğrafta işaretli balon bulunamadı');return;}
+    snap();const k=fixKey(S.keys[t.booklet]);ns.forEach(n=>{const a=ans[n];if(a&&a!=='*')k[n-1]=a;});S.keys[t.booklet]=k;
+    const multi=ns.filter(n=>ans[n]==='*').map(n=>n);
+    toast(`Cevap anahtarı kâğıttan çıkarıldı: ${filled.length}/${ns.length} soru`+(multi.length?` · çift işaretli: ${multi.join(', ')}`:''),5000);edCommit();}
+  catch(e){if(!quiet)toast('Anahtar çıkarılamadı: '+e.message,4000);}}
 function snap(){ED.hist.push(JSON.stringify({qs:ED.t.qs,nameBox:ED.t.nameBox,key:S.keys}));if(ED.hist.length>200)ED.hist.shift();}
 function edCommit(){const t=ED.t;t.R=FREE.autoR(t);freeSync();regradeAll();persist();edDraw();}
 function edMsg(){const t=ED.t;if(!t)return;let m='';const opts=S.cfg.opts;
   if(ED.mode==='q'){const q=t.qs[t.qs.length-1];
     if(q&&!q.done&&q.pts.length<opts)m=`Soru ${q.n}: ${LET[q.pts.length]} şıkkına dokunun`;
     else{const prev=q;const pat=$('#edPat').checked&&prev&&prev.pts.length>1;m=`Soru ${nextQNum(t)}: A şıkkına dokunun`+(pat?' (diğer şıklar kalıba göre yerleşir)':'');}
+    m+=` · ${t.qs.length} soru`;}
+  else if(ED.mode==='grid'){const g=ED.grid||[];const n=nextQNum(t);
+    m=g.length===0?`Izgara: ${n}. sorunun A balonuna dokunun`:g.length===1?`Izgara: ${n}. sorunun ${LET[opts-1]} balonuna dokunun`:`Izgara: bu sütundaki SON sorunun A balonuna dokunun`;
     m+=` · ${t.qs.length} soru`;}
   else if(ED.mode==='name')m=ED.nameStart?'Şimdi ad alanının sağ alt köşesine dokunun':(t.nameBox?'Ad alanı işaretli. Değiştirmek için sol üst köşeye dokunun':'Öğrencinin adını yazdığı alanın sol üst köşesine dokunun');
   else{const k=keyOf(t.booklet)||[];m=`Her sorunun doğru şıkkına dokunun · ${t.qs.filter(q=>k[q.n-1]).length}/${t.qs.length} işaretli`;}
@@ -871,11 +885,20 @@ async function edDraw(){const t=ED.t;if(!t)return;let c;try{c=await tplCanvas(t)
     if(q.pts.length){const[px,py]=q.pts[0];x.fillStyle='rgba(255,255,255,.85)';const w=x.measureText(String(q.n)).width;x.fillRect(px-R*1.25-w-4,py-R*0.7,w+6,R*1.4);x.fillStyle='#c0392b';x.fillText(String(q.n),px-R*1.25,py);}});
   if(t.nameBox){const[bx,by,bw,bh]=t.nameBox;x.strokeStyle='#1f6feb';x.lineWidth=lw*1.5;x.setLineDash([lw*4,lw*3]);x.strokeRect(bx,by,bw,bh);x.setLineDash([]);
     x.fillStyle='#1f6feb';x.textAlign='left';x.fillText('AD',bx+4,by+R);x.textAlign='right';}
+  (ED.mode==='grid'?(ED.grid||[]):[]).forEach(([gx,gy])=>{x.fillStyle='#d62828';x.beginPath();x.arc(gx,gy,R*0.6,0,7);x.fill();});
   if(ED.nameStart){x.fillStyle='#1f6feb';x.beginPath();x.arc(ED.nameStart[0],ED.nameStart[1],lw*3,0,7);x.fill();}
   edMsg();}
 $('#edCv').addEventListener('click',e=>{const t=ED.t;if(!t)return;const cv=$('#edCv');const r=cv.getBoundingClientRect();
   const X=(e.clientX-r.left)*t.W/r.width,Y=(e.clientY-r.top)*t.H/r.height;edTap(X,Y);});
 function edTap(x,y){const t=ED.t;
+  if(ED.mode==='grid'){ED.grid=ED.grid||[];ED.grid.push([x,y]);
+    if(ED.grid.length<3){edDraw();return;}
+    const[a1,e1,aL]=ED.grid;ED.grid=[];const opts=S.cfg.opts;
+    const def=String(window.__gridCount||10);let cnt=parseInt(prompt('Bu sütunda kaç soru var? (ilk ve son dahil)',def),10);
+    if(!(cnt>=2&&cnt<=100)){toast('Geçersiz sayı');edDraw();return;}window.__gridCount=cnt;
+    snap();const n0=nextQNum(t);const ox=(e1[0]-a1[0])/Math.max(1,opts-1),oy=(e1[1]-a1[1])/Math.max(1,opts-1),qx=(aL[0]-a1[0])/(cnt-1),qy=(aL[1]-a1[1])/(cnt-1);
+    for(let k=0;k<cnt;k++){const pts=[];for(let i=0;i<opts;i++)pts.push([a1[0]+i*ox+k*qx,a1[1]+i*oy+k*qy]);t.qs.push({n:n0+k,pts,done:true,bubble:true});}
+    toast(`${cnt} soru eklendi (${n0}–${n0+cnt-1}). Sonraki sütun için tekrar 3 dokunuş.`,3500);edCommit();autoKeyFromTpl(t,true);return;}
   if(ED.mode==='name'){if(!ED.nameStart){ED.nameStart=[x,y];edDraw();return;}
     snap();const[a,b]=ED.nameStart;t.nameBox=[Math.min(a,x),Math.min(b,y),Math.abs(x-a),Math.abs(y-b)];ED.nameStart=null;
     if(t.nameBox[2]<10||t.nameBox[3]<10){t.nameBox=null;toast('Alan çok küçük, tekrar deneyin');}edCommit();return;}
@@ -893,7 +916,7 @@ function edTap(x,y){const t=ED.t;
 /* ================= SERBEST KÂĞIT MOTORU ================= */
 const FREE=(()=>{
 const CV_URLS=window.OPENCV_URLS||['https://cdn.jsdelivr.net/npm/@techstark/opencv-js@4.10.0-release.1/dist/opencv.js','https://unpkg.com/@techstark/opencv-js@4.10.0-release.1/dist/opencv.js'];
-const TL=1600,DL=900;
+const TL=1600,DL=1300;
 let cvP=null,cv=null,orb=null,matcher=null;
 const prepCache={};
 function loadCV(){
@@ -904,7 +927,7 @@ function loadCV(){
       s.onload=async()=>{try{// Emscripten modülü kendini "then" ile döndürdüğü için await kullanılmıyor; hazır olana dek bekle
           const t0=Date.now();let c=window.cv;
           while(!(c&&typeof c.Mat==='function'&&typeof c.ORB==='function')){if(Date.now()-t0>90000)throw new Error('zaman aşımı');await new Promise(r=>setTimeout(r,100));c=window.cv;}
-          cv=c;orb=new cv.ORB(3000);matcher=new cv.BFMatcher(cv.NORM_HAMMING,false);res(true);/* modül 'then' içerdiği için onunla çözülmez */}catch(e){next();}};
+          cv=c;orb=new cv.ORB(6000);matcher=new cv.BFMatcher(cv.NORM_HAMMING,false);res(true);/* modül 'then' içerdiği için onunla çözülmez */}catch(e){next();}};
       s.onerror=next;document.head.appendChild(s);};
     next();});
   return cvP;}
@@ -923,6 +946,8 @@ function inkMap(gray){// yerel kontrast (black-hat): ince koyu çizgiler; gölge
   const fl=new cv.Mat(c.rows,c.cols,cv.CV_8U,new cv.Scalar(120));cv.max(c,fl,c);cv.divide(bh,c,rel,255);
   g.delete();c.delete();bh.delete();k.delete();fl.delete();return rel;}
 function toGray(canvas){const src=cv.imread(canvas),g=new cv.Mat();cv.cvtColor(src,g,cv.COLOR_RGBA2GRAY);src.delete();return g;}
+function toMinCh(canvas){// renkli kalem (sarı fosforlu vb.) için: R,G,B'nin en küçüğü
+  const src=cv.imread(canvas),ch=new cv.MatVector();cv.split(src,ch);const m=new cv.Mat();cv.min(ch.get(0),ch.get(1),m);const b=ch.get(2);cv.min(m,b,m);b.delete();ch.delete();src.delete();return m;}
 function features(gray){// küçültülmüş görüntüde ORB; noktalar tam çözünürlük koordinatında
   const k=Math.min(1,DL/Math.max(gray.cols,gray.rows));const sm=new cv.Mat();
   cv.resize(gray,sm,new cv.Size(Math.round(gray.cols*k),Math.round(gray.rows*k)),0,0,cv.INTER_AREA);
@@ -932,11 +957,11 @@ function features(gray){// küçültülmüş görüntüde ORB; noktalar tam çö
   sm.delete();kp.delete();none.delete();return{desc,pts};}
 function prepare(tpl,canvas){// şablonu hazırla (bir kez)
   const old=prepCache[tpl.id];if(old&&old.ver===tpl.ver)return old;if(old)release(tpl.id);
-  const g=toGray(canvas);const f=features(g);const n=inkMap(g);
+  const g=toGray(canvas);const f=features(g);const mc=toMinCh(canvas);const n=inkMap(mc);
   const tE=new cv.Mat();const k=cv.getStructuringElement(cv.MORPH_ELLIPSE,new cv.Size(3,3));cv.dilate(n,tE,k);
   g.delete();n.delete();k.delete();
-  const P={ver:tpl.ver,desc:f.desc,pts:f.pts,tE,W:canvas.width,H:canvas.height};prepCache[tpl.id]=P;return P;}
-function release(id){const P=prepCache[id];if(!P)return;P.desc.delete();P.tE.delete();delete prepCache[id];}
+  const P={ver:tpl.ver,desc:f.desc,pts:f.pts,tE,mc,W:canvas.width,H:canvas.height};prepCache[tpl.id]=P;return P;}
+function release(id){const P=prepCache[id];if(!P)return;P.desc.delete();P.tE.delete();if(P.mc)P.mc.delete();delete prepCache[id];}
 function match(fs,P){
   if(fs.desc.rows<10||P.desc.rows<10)return null;
   const mv=new cv.DMatchVectorVector();matcher.knnMatch(fs.desc,P.desc,mv,2);
@@ -964,7 +989,7 @@ function otsu(vals){const bins=100,hist=new Array(bins).fill(0);for(const v of v
 /* canvas: fotoğraf; tpls: [{tpl, canvas}] ; returns sonuç */
 function read(canvas,tpls,opt){
   opt=opt||{};const t0=performance.now();
-  const g=toGray(canvas);let fs=null,warped=null,sN=null,diff=null;
+  const g=toGray(canvas);let fs=null,warped=null,sN=null,diff=null,mcS=null,warpedC=null;
   try{
     fs=features(g);
     let best=null;
@@ -979,25 +1004,34 @@ function read(canvas,tpls,opt){
     const sc=Math.hypot(corners[1][0]-corners[0][0],corners[1][1]-corners[0][1])/P.W;
     if(sc<0.35)return{ok:false,tooSmall:true,corners,ms:performance.now()-t0};
     const Hm=cv.matFromArray(3,3,cv.CV_64F,m.h);warped=new cv.Mat();
-    cv.warpPerspective(g,warped,Hm,new cv.Size(P.W,P.H),cv.INTER_LINEAR,cv.BORDER_CONSTANT,new cv.Scalar(255));Hm.delete();
-    sN=inkMap(warped);diff=new cv.Mat();cv.subtract(sN,P.tE,diff);
+    cv.warpPerspective(g,warped,Hm,new cv.Size(P.W,P.H),cv.INTER_LINEAR,cv.BORDER_CONSTANT,new cv.Scalar(255));
+    mcS=toMinCh(canvas);warpedC=new cv.Mat();cv.warpPerspective(mcS,warpedC,Hm,new cv.Size(P.W,P.H),cv.INTER_LINEAR,cv.BORDER_CONSTANT,new cv.Scalar(255));Hm.delete();
+    sN=inkMap(warpedC);diff=new cv.Mat();cv.subtract(sN,P.tE,diff);
     const D=diff.data,W=P.W,Hh=P.H;const thr=(opt.thr||35);
     const unit=Math.pow(Math.max(P.W,P.H)/1600,2)*100;// skor birimi: 1600 px ölçeğinde 100 piksel
     const qf=T.tpl.qs.map(q=>scoreQuestion(D,W,Hh,q.pts,thr,unit,T.tpl.R||14));
     // kâğıda göre gürültü seviyesi: şıkların çoğu boş olduğundan %70'lik dilim gürültüyü verir
     const allv=[].concat(...qf).sort((a,b)=>a-b);const p70=allv.length?allv[Math.floor(allv.length*0.7)]:0;
     const Tq=Math.max(opt.T||0.25,p70*2.2);
+    // yerel hizalama: her balonlu soruyu şablondaki görünümüne göre küçük kaydırmayla oturt
+    const local=T.tpl.qs.map(q=>[0,0]);
+    if(T.tpl.qs.some(q=>q.bubble)){for(let i=0;i<T.tpl.qs.length;i++){const q=T.tpl.qs[i];if(!q.bubble)continue;local[i]=localShift(P.mc,warpedC,q.pts,P.W,P.H);}
+      // aykırı kaydırmaları komşu sorulara göre yumuşat
+      smoothShifts(T.tpl.qs,local);}
     const answers={};let amb=0;
-    T.tpl.qs.forEach((q,i)=>{const f=qf[i];const idx=f.map((v,j)=>j).sort((a,b)=>f[b]-f[a]);const top=f[idx[0]];let a='';
+    const hasB=T.tpl.qs.some(q=>q.bubble);let bres=null;
+    if(hasB){const M=warpedC.data;const bd=T.tpl.qs.map((q,i)=>q.bubble?bubbleDark(M,W,Hh,q.pts.map(([x,y])=>[x+local[i][0],y+local[i][1]])):null);const bq=T.tpl.qs.filter(q=>q.bubble);bres=decideBubbles(bq,bd.filter(Boolean));
+      T.tpl.qs.forEach((q,i)=>{if(q.bubble)qf[i]=bd[i];});}
+    T.tpl.qs.forEach((q,i)=>{if(q.bubble){answers[q.n]=bres.out[q.n];if(bres.flags[q.n])amb++;return;}const f=qf[i];const idx=f.map((v,j)=>j).sort((a,b)=>f[b]-f[a]);const top=f[idx[0]];let a='';
       if(top>=Tq){a=LET[idx[0]];if(f.length>1){const s=f[idx[1]];if(s>=Math.max(0.6,Tq*1.3)&&s>=top*0.28)a="*";}}
       if((top>=Tq*0.5&&top<Tq)||(a&&a!=='*'&&f.length>1&&f[idx[1]]>=Tq*0.8))amb++;answers[q.n]=a;});
     if(opt.debug){const c1=document.createElement('canvas');cv.imshow(c1,warped);const c2=document.createElement('canvas');const bin=new cv.Mat();cv.threshold(diff,bin,thr,255,cv.THRESH_BINARY);cv.imshow(c2,bin);bin.delete();opt.debug.warped=c1.toDataURL('image/jpeg',0.8);opt.debug.diff=c2.toDataURL('image/png');}
     let nameCrop=null;
     if(opt.wantName&&T.tpl.nameBox){const[x,y,w,h]=T.tpl.nameBox.map(Math.round);const rx=Math.max(0,x),ry=Math.max(0,y),rw=Math.min(P.W-rx,w),rh=Math.min(P.H-ry,h);
       if(rw>10&&rh>10){const roi=warped.roi(new cv.Rect(rx,ry,rw,rh));nameCrop=document.createElement('canvas');cv.imshow(nameCrop,roi);roi.delete();}}
-    const R=T.tpl.R||14;const qpts=T.tpl.qs.map(q=>q.pts.map(([x,y])=>{const p=app(hi,x,y),p2=app(hi,x+R,y);return[p[0],p[1],Math.hypot(p2[0]-p[0],p2[1]-p[1])];}));
-    return{ok:true,free:true,tplId:T.tpl.id,booklet:T.tpl.booklet,page:T.tpl.page,answers,qf,T:Tq,amb,corners,qpts,nameCrop,inl:m.inl,good:m.good,ms:performance.now()-t0,id:''};
-  }finally{g.delete();if(fs)fs.desc.delete();if(warped)warped.delete();if(sN)sN.delete();if(diff)diff.delete();}
+    const R=T.tpl.R||14;const qpts=T.tpl.qs.map((q,qi)=>q.pts.map(([x0,y0])=>{const x=x0+local[qi][0],y=y0+local[qi][1];const p=app(hi,x,y),p2=app(hi,x+R,y);return[p[0],p[1],Math.hypot(p2[0]-p[0],p2[1]-p[1])];}));
+    return{ok:true,free:true,tplId:T.tpl.id,booklet:T.tpl.booklet,page:T.tpl.page,answers,qf,T:bres&&T.tpl.qs.every(q=>q.bubble)?bres.Tb:Tq,amb,corners,qpts,nameCrop,inl:m.inl,good:m.good,ms:performance.now()-t0,id:''};
+  }finally{g.delete();if(fs)fs.desc.delete();if(warped)warped.delete();if(sN)sN.delete();if(diff)diff.delete();if(mcS)mcS.delete();if(warpedC)warpedC.delete();}
 }
 function scoreQuestion(D,W,H,pts,thr,unit,R){
   // sorunun şıkları etrafındaki mürekkep parçalarını bul, her parçayı merkezine en yakın şıkka ata
@@ -1017,11 +1051,41 @@ function scoreQuestion(D,W,H,pts,thr,unit,R){
     pts.forEach((p,j)=>{const d=(p[0]-cx)**2+(p[1]-cy)**2;if(d<bd){bd=d;bj=j;}});
     if(Math.sqrt(bd)<=rr*1.05)sc[bj]+=cnt;}
   return sc.map(v=>v/unit);}
+function localShift(tm,sm,pts,W,H){// şablon (tm) ve hizalanmış öğrenci (sm) min-kanal; soru bölgesinde en iyi kaydırma
+  const n=pts.length;let sp=1e9;for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){const d=Math.hypot(pts[i][0]-pts[j][0],pts[i][1]-pts[j][1]);if(d<sp)sp=d;}if(n<2)sp=30;
+  const pad=sp*0.6,srch=Math.round(sp*0.7);
+  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;for(const[x,y]of pts){x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y);}
+  x0=Math.round(x0-pad);y0=Math.round(y0-pad);x1=Math.round(x1+pad);y1=Math.round(y1+pad);
+  if(x0-srch<0||y0-srch<0||x1+srch>=W||y1+srch>=H)return[0,0];
+  const tr=tm.roi(new cv.Rect(x0,y0,x1-x0,y1-y0)),sr=sm.roi(new cv.Rect(x0-srch,y0-srch,x1-x0+2*srch,y1-y0+2*srch));
+  const t2=new cv.Mat(),s2=new cv.Mat();cv.GaussianBlur(tr,t2,new cv.Size(0,0),1.5);cv.GaussianBlur(sr,s2,new cv.Size(0,0),1.5);
+  const res=new cv.Mat();cv.matchTemplate(s2,t2,res,cv.TM_CCOEFF_NORMED);const mm=cv.minMaxLoc(res);
+  const out=mm.maxVal>0.3?[mm.maxLoc.x-srch,mm.maxLoc.y-srch]:[0,0];
+  tr.delete();sr.delete();t2.delete();s2.delete();res.delete();return out;}
+function smoothShifts(qs,sh){// her soruyu, numarası yakın sorulara göre medyanla kontrol et
+  const idx=qs.map((q,i)=>i).filter(i=>qs[i].bubble);const med=a=>{const s=a.slice().sort((x,y)=>x-y);return s[Math.floor(s.length/2)];};
+  const orig=sh.map(v=>v.slice());
+  for(const i of idx){const nb=idx.filter(j=>Math.abs(qs[j].n-qs[i].n)<=2);const mx=med(nb.map(j=>orig[j][0])),my=med(nb.map(j=>orig[j][1]));
+    const sp=Math.hypot(qs[i].pts[1]?qs[i].pts[1][0]-qs[i].pts[0][0]:20,qs[i].pts[1]?qs[i].pts[1][1]-qs[i].pts[0][1]:0);
+    if(Math.hypot(orig[i][0]-mx,orig[i][1]-my)>sp*0.3)sh[i]=[mx,my];}}
+function bubbleDark(M,W,H,pts){// balon içi koyuluğu, çevresindeki kâğıda göre (0-1)
+  const n=pts.length;let sp=1e9;for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){const d=Math.hypot(pts[i][0]-pts[j][0],pts[i][1]-pts[j][1]);if(d<sp)sp=d;}if(n<2)sp=30;
+  const rIn=Math.max(3,sp*0.22),rR=sp*0.5;const px=(x,y)=>{x=Math.round(x);y=Math.round(y);return(x<0||y<0||x>=W||y>=H)?255:M[y*W+x];};
+  return pts.map(([x,y])=>{let s=0,c=0;const r=Math.ceil(rIn);for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){if(dx*dx+dy*dy>rIn*rIn)continue;s+=px(x+dx,y+dy);c++;}const m=s/c;
+    const ring=[];for(let k=0;k<16;k++){const a=k*Math.PI/8;let v=0;for(let d=-1;d<=1;d++)v+=px(x+Math.cos(a)*(rR+d),y+Math.sin(a)*(rR+d));ring.push(v/3);}
+    ring.sort((a,b)=>a-b);const P=ring[11];return Math.max(0,Math.min(1,(P-m)/Math.max(P,40)));});}
+function decideBubbles(qs,bd){// balonlu sorular için ortak eşik (Otsu) ve karar
+  const all=[].concat(...bd.filter(Boolean));let Tb=all.length>3?otsu(all):0.3;Tb=Math.max(0.2,Math.min(0.55,Tb));
+  const out={},flags={};qs.forEach((q,i)=>{const f=bd[i];if(!f)return;const idx=f.map((v,j)=>j).sort((a,b)=>f[b]-f[a]);const top=f[idx[0]];let a='';
+    if(top>=Tb){a=LET[idx[0]];if(f.length>1){const s2=f[idx[1]];if(s2>=Tb&&s2>=top*0.6)a='*';}}
+    out[q.n]=a;flags[q.n]=(top>=Tb*0.7&&top<Tb)||(a&&a!=='*'&&f.length>1&&f[idx[1]]>=Tb*0.85);});return{out,flags,Tb};}
+function extractKey(tpl,canvas){// şablon fotoğrafındaki dolu balonlardan cevap anahtarı
+  const mc=toMinCh(canvas);try{const M=mc.data;const qs=tpl.qs.filter(q=>q.bubble);const bd=qs.map(q=>bubbleDark(M,canvas.width,canvas.height,q.pts));return decideBubbles(qs,bd).out;}finally{mc.delete();}}
 function autoR(tpl){// şık yarıçapı: aynı sorudaki şıklar arası en kısa mesafenin ~%42'si
   const ds=[];for(const q of tpl.qs){for(let i=1;i<q.pts.length;i++){const a=q.pts[i-1],b=q.pts[i];ds.push(Math.hypot(a[0]-b[0],a[1]-b[1]));}}
   ds.sort((a,b)=>a-b);const med=ds.length?ds[Math.floor(ds.length/2)]:60;
   return Math.max(8,Math.min(med*0.42,Math.max(tpl.W,tpl.H)*0.012));}
-return{loadCV,read,prepare,release,autoR,get ready(){return!!cv;},TL};
+return{loadCV,read,prepare,release,autoR,extractKey,get ready(){return!!cv;},TL};
 })();
 
 /* ================= BAŞLAT ================= */
