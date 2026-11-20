@@ -63,6 +63,10 @@ input[type=text],input[type=number],input[type=password],select{width:100%;paddi
 .toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:#1d2a30;color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;z-index:30;display:none;max-width:90%;text-align:center}
 .keyHead{display:flex;align-items:center;justify-content:space-between}
 body.serbest .optOnly{display:none!important}
+body.balon .optOnly{display:none!important}
+body.balon .optOnly.nShow{display:block!important}
+body:not(.balon) .balOnly{display:none!important}
+.kq{display:flex;gap:6px;margin-top:8px}.kq input{flex:1;font-family:ui-monospace,Menlo,monospace;letter-spacing:1px;text-transform:uppercase}
 body:not(.serbest) .freeOnly{display:none!important}
 .tpl{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
 .tpl:last-child{border:0}.tpl img{width:54px;height:72px;object-fit:cover;border-radius:6px;border:1px solid var(--line)}
@@ -91,11 +95,11 @@ body:not(.serbest) .freeOnly{display:none!important}
   <div class="card">
     <h2>Sınav ayarları</h2>
     <label class="f">Kâğıt türü</label>
-    <select id="cMode"><option value="optik">Optik form (uygulamanın ürettiği form)</option><option value="serbest">Serbest kâğıt (kendi sınav kâğıdınız)</option></select>
+    <select id="cMode"><option value="balon">Balonlu optik form (herhangi bir form, otomatik)</option><option value="optik">Optik form (uygulamanın ürettiği form)</option><option value="serbest">Serbest kâğıt (kendi sınav kâğıdınız)</option></select>
     <label class="f">Sınav adı</label>
     <input type="text" id="cTitle" maxlength="70">
     <div class="row">
-      <div class="optOnly"><label class="f">Soru sayısı</label><input type="number" id="cN" min="1" max="120" inputmode="numeric"></div>
+      <div class="optOnly nShow"><label class="f">Soru sayısı</label><input type="number" id="cN" min="1" max="200" inputmode="numeric"></div>
       <div><label class="f">Şık sayısı</label><select id="cOpts"><option value="3">3 (A-C)</option><option value="4">4 (A-D)</option><option value="5">5 (A-E)</option></select></div>
     </div>
     <div class="row">
@@ -111,6 +115,10 @@ body:not(.serbest) .freeOnly{display:none!important}
     <div class="err optOnly" id="cErr"></div>
     <div class="hint optOnly">Soru sayısı, şık, kitapçık ya da hane sayısını değiştirirseniz formu yeniden basmanız gerekir.</div>
     <div class="hint freeOnly">Şık sayısı, şablonda bir soruya kaç kez dokunacağınızı belirler. Soru sayısı şablondan otomatik hesaplanır.</div>
+  </div>
+  <div class="card balOnly">
+    <h2>Balonlu optik form</h2>
+    <div class="hint" style="margin-top:0">Herhangi bir balonlu cevap kâğıdı kullanılabilir; şablon gerekmez.<br>• Soru ve şık sayısını yukarıda girin.<br>• Uygulama balon sütunlarını bulur ve her sütunun üstündeki <b>A B C D E</b> başlığına göre yönü ve şık sırasını belirler; soruları sütun sütun, başlıktan aşağı doğru numaralar (1–10, 11–20 …).<br>• Kâğıt yan ya da ters tutulabilir; yalnız tüm balonlar ve sütun başlıkları kamerada görünmeli.<br>• Cevap anahtarını <b>Anahtar</b> sekmesinde yazın ya da doldurulmuş anahtar kâğıdını okutun.</div>
   </div>
   <div class="card freeOnly" id="freeCard">
     <h2>Sınav kâğıdı şablonu</h2>
@@ -155,6 +163,7 @@ body:not(.serbest) .freeOnly{display:none!important}
 <!-- OKUT -->
 <section class="tab" id="t-okut">
   <div class="modeSw"><button id="mStu" class="on">Öğrenci kâğıdı</button><button id="mKey">Cevap anahtarı</button></div>
+  <div class="row balOnly" id="curBookRow" style="margin-bottom:10px;align-items:center"><label class="f" style="flex:0 0 auto;margin:0">Okunan kitapçık türü</label><select id="curBook"></select></div>
   <div id="camWrap">
     <div id="camIdle">Kamerayı başlatın, sonra kâğıtları sırayla kameranın önüne koyun.<br>Her kâğıt kendiliğinden okunup kaydedilir.</div>
     <video id="video" playsinline muted style="display:none"></video>
@@ -433,7 +442,7 @@ return{toGray,read,readCanvas,detect,proj,cropWarp,homography,findBlobs,verify};
 })();
 
 /* ================= DURUM / KAYIT ================= */
-const DEF={cfg:{mode:'optik',title:'Ağ Temelleri Sınavı',n:20,opts:5,idDigits:9,booklets:2,penalty:0,points:0,multiWrong:true},free:{tpls:[],pattern:true},keys:{},results:[],ai:{on:true,key:'',model:'claude-haiku-5-5'}};
+const DEF={cfg:{mode:'balon',title:'Ağ Temelleri Sınavı',n:20,opts:5,idDigits:9,booklets:2,penalty:0,points:0,multiWrong:true},free:{tpls:[],pattern:true},keys:{},results:[],ai:{on:true,key:'',model:'claude-haiku-5-5'}};
 let S=JSON.parse(JSON.stringify(DEF));
 let storageOK=true;
 try{const raw=localStorage.getItem('optik_v1');if(raw){const o=JSON.parse(raw);S=Object.assign(S,o);S.cfg=Object.assign({},DEF.cfg,o.cfg);S.ai=Object.assign({},DEF.ai,o.ai);S.free=Object.assign({},DEF.free,o.free);}}catch(e){storageOK=false;}
@@ -469,20 +478,21 @@ function fillCfg(){const c=S.cfg;$('#cMode').value=c.mode||'optik';$('#cTitle').
   $('#cPen').value=c.penalty;$('#cPts').value=c.points||'';$('#cMulti').value=c.multiWrong?'1':'0';
   $('#aiOn').checked=!!S.ai.on;$('#aiKey').value=S.ai.key||'';$('#aiModel').value=S.ai.model||DEF.ai.model;}
 function readCfg(){const c=S.cfg,old=JSON.stringify([c.n,c.opts,c.booklets,c.idDigits]);
-  c.mode=$('#cMode').value;c.title=$('#cTitle').value.trim();if(c.mode!=='serbest')c.n=Math.max(1,Math.min(120,parseInt($('#cN').value)||1));c.opts=+$('#cOpts').value;c.booklets=+$('#cBook').value;
+  c.mode=$('#cMode').value;c.title=$('#cTitle').value.trim();if(c.mode!=='serbest')c.n=Math.max(1,Math.min(c.mode==='balon'?200:120,parseInt($('#cN').value)||1));c.opts=+$('#cOpts').value;c.booklets=+$('#cBook').value;
   c.idDigits=Math.max(0,Math.min(12,parseInt($('#cId').value)||0));c.penalty=+$('#cPen').value;c.points=parseFloat($('#cPts').value)||0;c.multiWrong=$('#cMulti').value==='1';
   if(c.mode==='serbest'){freeSync();L=layout(Object.assign({},c,{n:Math.min(c.n,60)}));}
+  else if(c.mode==='balon'){c.optsMax=0;L=layout(Object.assign({},c,{n:Math.min(c.n,60)}));$('#cErr').textContent='';}
   else{L=layout(c);if(L.error){c.n=L.q.length;L=layout(c);$('#cErr').textContent=L.error||'';}else $('#cErr').textContent='';}
   applyMode();
   if(old!==JSON.stringify([c.n,c.opts,c.booklets,c.idDigits])){for(const b in S.keys){S.keys[b]=fixKey(S.keys[b]);}}
   regradeAll();persist();renderHeader();}
 function fixKey(k){const n=S.cfg.n,ok=LET.slice(0,Math.max(S.cfg.opts,S.cfg.optsMax||0));const out=[];for(let i=0;i<n;i++){const v=k&&k[i];out.push(v&&ok.includes(v)?v:'');}return out;}
-['#cMode','#cTitle','#cN','#cOpts','#cBook','#cId','#cPen','#cPts','#cMulti'].forEach(s=>$(s).addEventListener('change',()=>{readCfg();if(S.cfg.mode!=='serbest'){if(+$('#cN').value!==S.cfg.n)$('#cErr').textContent=`Bu ayarlarla en fazla ${S.cfg.n} soru sığar.`;$('#cN').value=S.cfg.n;renderForm();}else renderTpls();}));
+['#cMode','#cTitle','#cN','#cOpts','#cBook','#cId','#cPen','#cPts','#cMulti'].forEach(s=>$(s).addEventListener('change',()=>{readCfg();renderCurBook();if(S.cfg.mode==='optik'){if(+$('#cN').value!==S.cfg.n)$('#cErr').textContent=`Bu ayarlarla en fazla ${S.cfg.n} soru sığar.`;$('#cN').value=S.cfg.n;renderForm();}else renderTpls();}));
 $('#aiOn').onchange=()=>{S.ai.on=$('#aiOn').checked;persist();};
 $('#aiKey').onchange=()=>{S.ai.key=$('#aiKey').value.trim();persist();};
 $('#aiModel').onchange=()=>{S.ai.model=$('#aiModel').value.trim()||DEF.ai.model;persist();};
-function renderHeader(){$('#hTitle').textContent=S.cfg.title||'Optik Okuyucu';$('#hSub').textContent=`${S.cfg.mode==='serbest'?'Serbest kâğıt · ':''}${S.cfg.n} soru · ${S.cfg.opts} şık${S.cfg.booklets>1?' · '+S.cfg.booklets+' kitapçık':''} · ${S.results.length} öğrenci`;}
-function renderForm(){if(S.cfg.mode==='serbest'){renderTpls();return;}const cv=$('#formPrev');const w=Math.min(1100,Math.round(cv.clientWidth*(window.devicePixelRatio||1))||800);const s=w/210;cv.width=w;cv.height=Math.round(297*s);drawForm(cv.getContext('2d'),s,S.cfg,L);}
+function renderHeader(){$('#hTitle').textContent=S.cfg.title||'Optik Okuyucu';$('#hSub').textContent=`${S.cfg.mode==='serbest'?'Serbest kâğıt · ':S.cfg.mode==='balon'?'Balonlu form · ':''}${S.cfg.n} soru · ${S.cfg.opts} şık${S.cfg.booklets>1?' · '+S.cfg.booklets+' kitapçık':''} · ${S.results.length} öğrenci`;}
+function renderForm(){if(S.cfg.mode==='serbest'){renderTpls();return;}if(S.cfg.mode==='balon')return;const cv=$('#formPrev');const w=Math.min(1100,Math.round(cv.clientWidth*(window.devicePixelRatio||1))||800);const s=w/210;cv.width=w;cv.height=Math.round(297*s);drawForm(cv.getContext('2d'),s,S.cfg,L);}
 function formCanvas(dpi){const s=dpi/25.4;const cv=document.createElement('canvas');cv.width=Math.round(210*s);cv.height=Math.round(297*s);drawForm(cv.getContext('2d'),s,S.cfg,L);return cv;}
 function download(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},4000);}
 const fname=ext=>(S.cfg.title||'sinav').replace(/[^\wçğıöşüÇĞİÖŞÜ -]/g,'').trim().replace(/\s+/g,'_')+ext;
@@ -505,10 +515,15 @@ function makePdf(jpg,iw,ih){const enc=new TextEncoder();const parts=[];let len=0
 function renderKeys(){const box=$('#keyCards');box.innerHTML='';
   for(const b of bookLetters()){const k=fixKey(S.keys[b]);const filled=k.filter(x=>x).length;
     const card=document.createElement('div');card.className='card';
-    card.innerHTML=`<div class="keyHead"><h2 style="margin:0">${S.cfg.booklets>1?b+' kitapçığı':'Cevap anahtarı'}</h2><span class="pill ${filled===S.cfg.n?'ok':filled?'':'bad'}">${filled}/${S.cfg.n}</span></div><div class="grid"></div><div class="btns"><button class="btn warn" data-clr>Temizle</button></div>`;
+    card.innerHTML=`<div class="keyHead"><h2 style="margin:0">${S.cfg.booklets>1?b+' kitapçığı':'Cevap anahtarı'}</h2><span class="pill ${filled===S.cfg.n?'ok':filled?'':'bad'}">${filled}/${S.cfg.n}</span></div><div class="kq"><input type="text" data-kq placeholder="Cevapları yazın: DCBCB ECCAD …" autocapitalize="characters" autocomplete="off"><button class="btn" data-kqa>Uygula</button></div><div class="hint">Boş soru için - yazın. Boşluk ve rakamlar yok sayılır.</div><div class="grid"></div><div class="btns"><button class="btn warn" data-clr>Temizle</button></div>`;
     const g=card.querySelector('.grid');
     k.forEach((v,q)=>{const c=document.createElement('div');c.className='cell'+(v?'':' emp');c.innerHTML=`${q+1}<b>${v||'–'}</b>`;
       c.onclick=()=>{const seq=['',...LET.slice(0,S.cfg.opts)];const kk=fixKey(S.keys[b]);kk[q]=seq[(seq.indexOf(kk[q])+1)%seq.length];S.keys[b]=kk;regradeAll();renderKeys();};g.appendChild(c);});
+    const kqi=card.querySelector('[data-kq]');kqi.value=k.map(v=>v||'-').join('').replace(/-+$/,'').replace(/(.{5})/g,'$1 ').trim();
+    card.querySelector('[data-kqa]').onclick=()=>{const ok=LET.slice(0,Math.max(S.cfg.opts,S.cfg.optsMax||0));const chars=kqi.value.toLocaleUpperCase('tr').replace(/[^A-Z\-_.*]/g,'').split('');
+      const kk=fixKey(S.keys[b]);let bad='';chars.forEach((ch,i)=>{if(i>=S.cfg.n)return;if(ok.includes(ch))kk[i]=ch;else if('-_.*'.includes(ch))kk[i]='';else bad+=ch;});
+      S.keys[b]=kk;regradeAll();renderKeys();toast(chars.length>S.cfg.n?`${S.cfg.n} soru alındı, fazlası yok sayıldı`:bad?`Geçersiz harf yok sayıldı: ${bad}`:`${Math.min(chars.length,S.cfg.n)} cevap kaydedildi`);};
+    kqi.addEventListener('keydown',e=>{if(e.key==='Enter')card.querySelector('[data-kqa]').click();});
     card.querySelector('[data-clr]').onclick=()=>{if(confirm(`${b} anahtarı silinsin mi?`)){delete S.keys[b];regradeAll();renderKeys();}};
     box.appendChild(card);}}
 $('#bKeyCam').onclick=()=>{setMode('key');showTab('okut');startCam();};
@@ -516,14 +531,15 @@ $('#keyFile').onchange=e=>readFile(e.target,'key');
 $('#stuFile').onchange=e=>readFile(e.target,'stu');
 
 /* ================= OKUMA SONUCU İŞLEME ================= */
-function applyKey(r){const b=S.cfg.booklets>1?r.booklet:'A';
+function applyKey(r){if(r.bub)r.booklet=curBook();const b=S.cfg.booklets>1?r.booklet:'A';
   if(b==='?'){toast('Kitapçık türü işaretlenmemiş, anahtar kaydedilmedi',3500);return false;}
   if(r.free){const k=fixKey(S.keys[b]);r.answers.forEach((a,i)=>{if(a!=null)k[i]=a==='*'?'':a;});S.keys[b]=k;}
   else S.keys[b]=r.answers.map(a=>a==='*'?'':a);regradeAll();
   const n=S.keys[b].filter(x=>x).length;flash(b,`${S.cfg.booklets>1?b+' kitapçığı':'Cevap'} anahtarı kaydedildi · ${n} soru`);beep(1);
   $('#lastBox').innerHTML=`<b>${S.cfg.booklets>1?b+' kitapçığı ':''}anahtarı</b> kaydedildi (${n}/${S.cfg.n}).`+(r.answers.includes('*')?'<div class="err">Çift işaretli sorular boş bırakıldı.</div>':'');if($('#editor').style.display==='flex')edDraw();return true;}
 let lastSavedId=null;
-function saveStudent(r,srcCanvas,scale){
+function curBook(){const v=$('#curBook')&&$('#curBook').value;return S.cfg.booklets>1?(v||'A'):'A';}
+function saveStudent(r,srcCanvas,scale){if(r.bub)r.booklet=curBook();
   if(r.free){// çok sayfalı sınav: 2. sayfa son öğrencinin kaydına eklenir
     const last=S.results.find(x=>x.id===lastSavedId);
     if(last&&r.page>1&&last.booklet===r.booklet&&!(last.pages||[]).includes(r.page)){
@@ -531,14 +547,15 @@ function saveStudent(r,srcCanvas,scale){
       grade(last);persist();renderHeader();flash(fmt(last.score),`Sayfa ${r.page} eklendi`+(last.name?' · '+last.name:''));beep(1);showLast(last);return last;}
   }
   const ans=r.answers.map(a=>a==null?'':a);
-  const rec={id:Date.now()+Math.random().toString(36).slice(2,6),no:r.id||'',name:'',booklet:S.cfg.booklets>1?r.booklet:'A',answers:ans,auto:ans.slice(),t:new Date().toISOString(),amb:r.amb,ms:Math.round(r.ms||0),mode:r.free?'serbest':'optik'};
+  const rec={id:Date.now()+Math.random().toString(36).slice(2,6),no:r.id||'',name:'',booklet:S.cfg.booklets>1?r.booklet:'A',answers:ans,auto:ans.slice(),t:new Date().toISOString(),amb:r.amb,ms:Math.round(r.ms||0),mode:r.free?'serbest':r.bub?'balon':'optik'};
   if(r.free)rec.pages=[r.page];
-  let crop=null;try{if(r.free){crop=r.nameCrop||null;}else crop=OMR.cropWarp(srcCanvas,r.H,L.header,6,scale);if(crop)rec.img=thumb(crop);}catch(e){}
+  let crop=null;try{if(r.free||r.bub){crop=r.nameCrop||null;}else crop=OMR.cropWarp(srcCanvas,r.H,L.header,6,scale);if(crop)rec.img=thumb(crop);}catch(e){}
   // aynı öğrenci tekrar okunduysa güncelle
   let idx=-1;
   if(rec.no&&!rec.no.includes('?'))idx=S.results.findIndex(x=>x.no===rec.no);
   if(idx>=0){const old=S.results[idx];rec.id=old.id;if(old.name)rec.name=old.name;rec.nameSrc=old.nameSrc;S.results[idx]=rec;}else S.results.push(rec);
-  lastSavedId=rec.id;grade(rec);persist();renderHeader();
+  const dup=idx<0&&S.results.some(x=>x!==rec&&x.answers.join(',')===rec.answers.join(',')&&rec.answers.filter(v=>v).length>3);if(dup){rec.note2='Aynı cevaplı başka kâğıt var (tekrar okutulmuş olabilir)';}
+  lastSavedId=rec.id;grade(rec);persist();renderHeader();if(dup)setTimeout(()=>toast('Uyarı: aynı cevaplara sahip bir kâğıt zaten kayıtlı. Tekrar okutulduysa Sonuçlar\'dan silin.',4500),1400);
   const sc=rec.score==null?'—':fmt(rec.score);
   flash(sc,(rec.no?rec.no+' · ':'')+(rec.score==null?rec.note:`${rec.D}D ${rec.Y}Y ${rec.B}B`)+(idx>=0?' · güncellendi':''));beep(rec.score==null?0:1);
   showLast(rec);
@@ -561,7 +578,8 @@ async function startCam(){
   let inFrame=false;try{inFrame=window.top!==window.self;}catch(e){inFrame=true;}
   const okProto=location.protocol==='https:'||/^(localhost|127\.0\.0\.1)$/.test(location.hostname);
   if(!okProto||!window.isSecureContext||!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){camHelp('insecure');return;}
-  try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}},audio:false});}
+  const hi=S.cfg.mode==='balon';
+  try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:hi?3840:1920},height:{ideal:hi?2160:1080}},audio:false});}
   catch(e){
     if(e.name==='OverconstrainedError'){try{stream=await navigator.mediaDevices.getUserMedia({video:true,audio:false});}catch(e2){e=e2;}}
     if(!stream){
@@ -588,18 +606,47 @@ function camHelp(kind,detail){const el=$('#camHelp');if(!kind){el.style.display=
   const t=T[kind]||T.other;
   el.innerHTML=`<h2 style="color:var(--bad)">${t[0]}</h2><div style="font-size:14px">${t[1]}</div>${detail?`<div class="hint">Teknik ayrıntı: ${esc(detail)}</div>`:''}<div class="hint" style="margin-top:10px">Bu arada <b>“Fotoğraf çekip oku”</b> düğmesiyle telefonun kendi kamerasından her kâğıdı tek tek çekip okutabilirsiniz.</div>`;
   el.style.display='block';el.scrollIntoView({behavior:'smooth',block:'center'});}
-function stopCam(){running=false;if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;track=null;torchOn=false;
+function stopCam(){running=false;imgCap=null;if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;track=null;torchOn=false;
   try{wake&&wake.release();}catch(e){}wake=null;
   $('#video').style.display='none';$('#ov').style.display='none';$('#status').style.display='none';$('#camIdle').style.display='';$('#bTorch').style.display='none';
   $('#bCam').textContent='Kamerayı başlat';$('#bCam').classList.remove('warn');}
 function setStatus(t){$('#status').textContent=t;}
-function tick(){if(!running)return;const v=$('#video');
+let imgCap=null,capBusy=false,lastCap=0,pendSig=null;
+function tick(){if(!running)return;if(S.cfg.mode==='balon')return balonTick();const v=$('#video');
   if(v.readyState>=2&&!busy&&v.videoWidth){busy=true;
     try{const vw=v.videoWidth,vh=v.videoHeight,sc=Math.min(1,2000/Math.max(vw,vh));if(pc.width!==Math.round(vw*sc)||pc.height!==Math.round(vh*sc)){pc.width=Math.round(vw*sc);pc.height=Math.round(vh*sc);}
       const ctx=pc.getContext('2d',{willReadFrequently:true});ctx.drawImage(v,0,0,pc.width,pc.height);
       const r=readAny(pc);handleLive(r,v,sc);}catch(e){console.error(e);}
     busy=false;}
   setTimeout(tick,40);}
+async function grabStill(){// deklanşörsüz tam çözünürlüklü kare (ImageCapture), yoksa video karesi
+  try{if(!imgCap&&window.ImageCapture&&track)imgCap=new ImageCapture(track);
+    if(imgCap&&imgCap.takePhoto){const blob=await imgCap.takePhoto();const bmp=await createImageBitmap(blob);const k=Math.min(1,2600/Math.max(bmp.width,bmp.height));
+      const c=document.createElement('canvas');c.width=Math.round(bmp.width*k);c.height=Math.round(bmp.height*k);c.getContext('2d').drawImage(bmp,0,0,c.width,c.height);bmp.close&&bmp.close();return c;}}
+  catch(e){imgCap=null;}
+  return null;}
+async function balonTick(){if(!running)return;const v=$('#video');
+  if(v.readyState>=2&&!busy&&v.videoWidth){busy=true;
+    try{const vw=v.videoWidth,vh=v.videoHeight,sc=Math.min(1,2600/Math.max(vw,vh));if(pc.width!==Math.round(vw*sc)||pc.height!==Math.round(vh*sc)){pc.width=Math.round(vw*sc);pc.height=Math.round(vh*sc);}
+      pc.getContext('2d',{willReadFrequently:true}).drawImage(v,0,0,pc.width,pc.height);
+      const cfg={n:S.cfg.n,opts:S.cfg.opts,allowPartial:true};const r=BUB.read(pc,cfg);
+      const ov=$('#ov');ov.width=pc.width;ov.height=pc.height;const c=ov.getContext('2d');c.clearRect(0,0,ov.width,ov.height);
+      if(!r.ok){st.miss++;if(st.miss>=4){st.removed=true;pendSig=null;}setStatus(r.tooSmall?'Kâğıda biraz yaklaşın':st.removed?(mode==='key'?'Anahtar kâğıdını gösterin':'Kâğıdı gösterin: balonlar ve A B C D E başlıkları görünsün'):'Kâğıt aranıyor…');}
+      else{st.miss=0;drawOverlay(c,r);
+        let good=(r.found>=S.cfg.n&&!r.grown)?r:null;
+        if(!good&&!capBusy&&Date.now()-lastCap>900){capBusy=true;lastCap=Date.now();setStatus('Kâğıt bulundu, tam çözünürlükte okunuyor…');
+          try{const still=await grabStill();if(still){const r2=BUB.read(still,{n:S.cfg.n,opts:S.cfg.opts,allowPartial:true});if(r2.ok&&r2.found>=S.cfg.n&&!r2.grown)good=r2;}}finally{capBusy=false;}}
+        if(good)acceptBalon(good,pc);else if(!capBusy)setStatus(r.found<S.cfg.n?`Bulunan soru ${r.found}/${S.cfg.n} · tüm balonlar görünsün`:'Kâğıdı sabit tutun…');}
+    }catch(e){console.error(e);}
+    busy=false;}
+  setTimeout(balonTick,60);}
+function acceptBalon(r,cv){const sig=r.answers.join(',');
+  // belirsiz işaret varsa ikinci bir okumayla doğrula
+  if(r.amb&&pendSig!==sig){pendSig=sig;setStatus('Doğrulanıyor…');return;}
+  const isNew=st.removed||(sig!==st.saved&&!(st.savedAns&&diffCount(r.answers,st.savedAns)<=2));
+  if(isNew){if(mode==='key'){if(applyKey(r)){st.saved=sig;st.savedAns=r.answers;st.removed=false;}}
+    else{saveStudent(r,cv,1);st.saved=sig;st.savedAns=r.answers;st.removed=false;}}
+  pendSig=null;setStatus(mode==='key'?'Anahtar kaydedildi ✓':'Kaydedildi ✓ Sıradaki kâğıdı koyun');}
 function sigOf(r){return (r.tplId||'')+'|'+r.booklet+'|'+r.id+'|'+r.answers.join(',');}
 function diffCount(a,b){let n=0;for(let i=0;i<a.length;i++)if(a[i]!==b[i])n++;return n;}
 function handleLive(r,v,sc){
@@ -625,7 +672,10 @@ function saveStudentQuiet(r){const i=S.results.findIndex(x=>x.id===lastSavedId);
   rec.answers=r.answers.slice();rec.auto=r.answers.slice();rec.booklet=S.cfg.booklets>1?r.booklet:'A';if(r.id&&!r.id.includes('?'))rec.no=r.id;grade(rec);persist();showLast(rec);}
 function drawOverlay(c,r){
   c.lineWidth=Math.max(2,pc.width/300);c.strokeStyle='#2ee07a';c.beginPath();r.corners.forEach((p,i)=>i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1]));c.closePath();c.stroke();
-  const key=mode==='stu'?keyOf(S.cfg.booklets>1?r.booklet:'A'):null;
+  const key=mode==='stu'?keyOf(S.cfg.booklets>1?(r.bub?curBook():r.booklet):'A'):null;
+  if(r.bub){if(r.outlines){c.strokeStyle='#2ee07a';for(const o of r.outlines){c.beginPath();o.forEach((p,i)=>i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1]));c.closePath();c.stroke();}}
+    (r.qpts||[]).forEach((pts,q)=>{const a=r.answers&&r.answers[q];pts.forEach(([x,y,rad],i)=>{const mk=a===LET[i]||(a==='*'&&r.qd[q][i]>=r.T);const isKey=key&&key[q]===LET[i];if(!mk&&!isKey)return;
+      c.beginPath();c.arc(x,y,Math.max(4,rad*1.3),0,7);if(mk){c.fillStyle=!key?'rgba(40,120,255,.6)':(isKey?'rgba(46,224,122,.65)':'rgba(240,60,60,.65)');c.fill();}else{c.strokeStyle='rgba(255,170,0,.95)';c.lineWidth=Math.max(2,rad/3);c.stroke();}});});return;}
   if(r.free){const tpl=S.free.tpls.find(t=>t.id===r.tplId);if(!tpl)return;
     tpl.qs.forEach((q,qi)=>{const a=r.answers[q.n-1];(r.qpts[qi]||[]).forEach(([x,y,rad],i)=>{const mk=a===LET[i]||(a==='*'&&r.qf[qi][i]>=r.T);const isKey=key&&key[q.n-1]===LET[i];
       if(!mk&&!isKey)return;c.beginPath();c.arc(x,y,Math.max(4,rad*1.1),0,7);
@@ -647,10 +697,11 @@ function readFile(input,m){const f=input.files&&input.files[0];input.value='';if
   if(S.cfg.mode==='serbest'&&!FREE.ready){toast('Görüntü kütüphanesi hazırlanıyor…',4000);ensureFree(true).then(()=>readImageFile(f,m)).catch(e=>toast(e.message,5000));return;}
   readImageFile(f,m);}
 function readImageFile(f,m){
-  const img=new Image();img.onload=()=>{const sc=Math.min(1,2400/Math.max(img.width,img.height));const cv=document.createElement('canvas');cv.width=Math.round(img.width*sc);cv.height=Math.round(img.height*sc);
+  const img=new Image();img.onload=()=>{const sc=Math.min(1,(S.cfg.mode==='balon'?2600:2400)/Math.max(img.width,img.height));const cv=document.createElement('canvas');cv.width=Math.round(img.width*sc);cv.height=Math.round(img.height*sc);
     cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);URL.revokeObjectURL(img.src);
     const r=readAny(cv);
-    if(!r.ok){toast(r.tooSmall?'Kâğıt çok küçük görünüyor, daha yakından çekin.':(S.cfg.mode==='serbest'?'Kâğıt şablonla eşleşmedi. Tüm sayfa net görünecek şekilde tekrar çekin.':'Form bulunamadı. 4 köşe kare ve sol üstteki küçük kare görünmeli.'),4000);return;}
+    if(r.bub&&r.ok&&r.grown){r.amb=(r.amb||0)+r.grown;toast(`Uyarı: ${r.grown} satır tahminle tamamlandı, sonucu kontrol edin`,4000);}
+    if(!r.ok){toast(r.partial?`Yalnızca ${r.found}/${S.cfg.n} soru bulundu. Tüm balonlar görünecek şekilde tekrar çekin.`:r.noHeader?'Sütun başlıkları (A B C D E) bulunamadı.':r.tooSmall?'Kâğıt çok küçük görünüyor, daha yakından çekin.':(S.cfg.mode==='serbest'?'Kâğıt şablonla eşleşmedi. Tüm sayfa net görünecek şekilde tekrar çekin.':'Form bulunamadı. 4 köşe kare ve sol üstteki küçük kare görünmeli.'),4000);return;}
     if(m==='key'){applyKey(r);renderKeys();toast(r.free?`${r.booklet} kitapçığı, sayfa ${r.page}: anahtar okundu`:'Anahtar okundu');}
     else{const rec=saveStudent(r,cv,1);toast(rec.score==null?'Kaydedildi · '+rec.note:'Kaydedildi: '+fmt(rec.score)+' puan');}};
   img.src=URL.createObjectURL(f);}
@@ -681,7 +732,7 @@ $('#bReAI').onclick=()=>{if(!S.ai.key){toast('Önce Sınav sekmesinden API anaht
 
 /* ================= SONUÇLAR ================= */
 function resHTML(r,big){const nm=r.name?esc(r.name):(r.nameStatus==='pending'?'<i>isim okunuyor…</i>':(r.img?`<img src="${r.img}">`:'<i>isimsiz</i>'));
-  return `<div class="res"><div style="flex:1;min-width:0"><div class="nm">${nm}</div><div class="meta">${r.no?'No: '+esc(r.no)+' · ':''}${S.cfg.booklets>1?'Kitapçık '+esc(r.booklet)+' · ':''}${r.D==null?'<span style="color:var(--bad)">'+esc(r.note)+'</span>':`${r.D} D · ${r.Y} Y · ${r.B} B${S.cfg.penalty?' · Net '+fmt(r.net):''}`}${r.amb?' · <span style="color:var(--acc)">'+r.amb+' belirsiz</span>':''}${r.verified?' · <span class="ok2">✓ kontrol</span>':''}</div></div><div class="sc">${fmt(r.score)}</div></div>`;}
+  return `<div class="res"><div style="flex:1;min-width:0"><div class="nm">${nm}</div><div class="meta">${r.no?'No: '+esc(r.no)+' · ':''}${S.cfg.booklets>1?'Kitapçık '+esc(r.booklet)+' · ':''}${r.D==null?'<span style="color:var(--bad)">'+esc(r.note)+'</span>':`${r.D} D · ${r.Y} Y · ${r.B} B${S.cfg.penalty?' · Net '+fmt(r.net):''}`}${r.amb?' · <span style="color:var(--acc)">'+r.amb+' belirsiz</span>':''}${r.verified?' · <span class="ok2">✓ kontrol</span>':''}${r.note2?' · <span style="color:var(--bad)">olası tekrar</span>':''}</div></div><div class="sc">${fmt(r.score)}</div></div>`;}
 function renderResults(){renderHeader();const rs=S.results;const sc=rs.filter(r=>r.score!=null).map(r=>r.score);
   const avg=sc.length?sc.reduce((a,b)=>a+b,0)/sc.length:null;
   $('#stats').innerHTML=`<div><b>${rs.length}</b><span>öğrenci</span></div><div><b>${fmt(avg==null?null:Math.round(avg*10)/10)}</b><span>ortalama</span></div><div><b>${sc.length?fmt(Math.max(...sc)):'—'}</b><span>en yüksek</span></div><div><b>${sc.length?fmt(Math.min(...sc)):'—'}</b><span>en düşük</span></div>`;
@@ -781,7 +832,8 @@ const IDB={p:null,db(){if(!this.p)this.p=new Promise((res,rej)=>{const r=indexed
 const tplCv={},tplThumb={};
 async function tplCanvas(t){if(tplCv[t.id])return tplCv[t.id];const blob=await IDB.get('img_'+t.id);if(!blob)throw new Error('Şablon resmi bu cihazda bulunamadı');
   const url=URL.createObjectURL(blob);const img=new Image();img.src=url;await img.decode();const c=document.createElement('canvas');c.width=img.width;c.height=img.height;c.getContext('2d').drawImage(img,0,0);URL.revokeObjectURL(url);tplCv[t.id]=c;return c;}
-function applyMode(){document.body.classList.toggle('serbest',S.cfg.mode==='serbest');}
+function applyMode(){document.body.classList.toggle('serbest',S.cfg.mode==='serbest');document.body.classList.toggle('balon',S.cfg.mode==='balon');}
+function renderCurBook(){const sel=$('#curBook');if(!sel)return;const cur=sel.value||'A';sel.innerHTML=bookLetters().map(b=>`<option>${b}</option>`).join('');sel.value=bookLetters().includes(cur)?cur:'A';$('#curBookRow').style.display=(S.cfg.mode==='balon'&&S.cfg.booklets>1)?'':'none';}
 function freeSync(){if(S.cfg.mode!=='serbest')return;let n=0,o=0;for(const t of S.free.tpls)for(const q of t.qs){n=Math.max(n,q.n);o=Math.max(o,q.pts.length);}
   S.cfg.n=Math.max(1,n);S.cfg.optsMax=o;for(const b in S.keys)S.keys[b]=fixKey(S.keys[b]);}
 function nextQNum(t){let m=0;for(const x of S.free.tpls)if(x.booklet===t.booklet&&x.page<=t.page)for(const q of x.qs)m=Math.max(m,q.n);
@@ -817,6 +869,7 @@ async function ensureFree(withMsg){
   FREE_T=[];for(const t of tpls){const c=await tplCanvas(t);FREE.prepare(t,c);FREE_T.push({tpl:t,canvas:c});}
   return FREE_T;}
 function readAny(cv){
+  if(S.cfg.mode==='balon')return BUB.read(cv,{n:S.cfg.n,opts:S.cfg.opts});
   if(S.cfg.mode!=='serbest')return OMR.readCanvas(cv,S.cfg,L);
   if(!FREE.ready||!FREE_T.length)return{ok:false};
   const r=FREE.read(cv,FREE_T,{wantName:true,preferId:lastTplId});
@@ -1088,11 +1141,182 @@ function autoR(tpl){// şık yarıçapı: aynı sorudaki şıklar arası en kıs
 return{loadCV,read,prepare,release,autoR,extractKey,get ready(){return!!cv;},TL};
 })();
 
+/* ================= BALONLU FORM: ŞABLONSUZ OTOMATİK OKUYUCU =================
+   Balon ızgarasını bulur; her bloğun üstündeki "A B C D E" başlığından yönü ve şık sırasını belirler. */
+const BUB=(()=>{
+function minGray(cv){const w=cv.width,h=cv.height,d=cv.getContext('2d',{willReadFrequently:true}).getImageData(0,0,w,h).data;const g=new Uint8Array(w*h);
+  for(let i=0,j=0;i<g.length;i++,j+=4){const r=d[j],gg=d[j+1],b=d[j+2];g[i]=r<gg?(r<b?r:b):(gg<b?gg:b);}return g;}
+function binarize(g,w,h){const W1=w+1,ii=new Uint32Array(W1*(h+1));
+  for(let y=0;y<h;y++){let rs=0;for(let x=0;x<w;x++){rs+=g[y*w+x];ii[(y+1)*W1+x+1]=ii[y*W1+x+1]+rs;}}
+  const half=Math.max(6,Math.round(Math.max(w,h)/70));const bin=new Uint8Array(w*h);
+  for(let y=0;y<h;y++){const y0=Math.max(0,y-half),y1=Math.min(h,y+half+1);
+    for(let x=0;x<w;x++){const x0=Math.max(0,x-half),x1=Math.min(w,x+half+1);
+      const m=(ii[y1*W1+x1]-ii[y0*W1+x1]-ii[y1*W1+x0]+ii[y0*W1+x0])/((x1-x0)*(y1-y0));const v=g[y*w+x];
+      if(v<m*0.85&&m-v>10)bin[y*w+x]=1;}}
+  return bin;}
+function dilate1(bin,w,h){const out=new Uint8Array(w*h);for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){const i=y*w+x;if(bin[i]||bin[i-1]||bin[i+1]||bin[i-w]||bin[i+w])out[i]=1;}return out;}
+function label(bin,w,h){const lab=new Int32Array(w*h);const st=new Int32Array(w*h);const comps=[];let id=0;
+  for(let p=0;p<w*h;p++){if(!bin[p]||lab[p])continue;id++;let sp=0;st[sp++]=p;lab[p]=id;let a=0,sx=0,sy=0,x0=w,y0=h,x1=0,y1=0;
+    while(sp){const q=st[--sp];const x=q%w,y=(q-x)/w;a++;sx+=x;sy+=y;if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;
+      if(x>0&&bin[q-1]&&!lab[q-1]){lab[q-1]=id;st[sp++]=q-1;}if(x<w-1&&bin[q+1]&&!lab[q+1]){lab[q+1]=id;st[sp++]=q+1;}
+      if(y>0&&bin[q-w]&&!lab[q-w]){lab[q-w]=id;st[sp++]=q-w;}if(y<h-1&&bin[q+w]&&!lab[q+w]){lab[q+w]=id;st[sp++]=q+w;}}
+    comps.push({id,a,x:sx/a,y:sy/a,x0,y0,x1,y1,w:x1-x0+1,h:y1-y0+1});}
+  return{lab,comps};}
+function holeInfo(lab,w,c){// bileşenin içindeki boşluk (halka mı?)
+  const bw=c.w+2,bh=c.h+2,ox=c.x0-1,oy=c.y0-1;const m=new Uint8Array(bw*bh);const st=[];
+  const isC=(x,y)=>{const gx=x+ox,gy=y+oy;if(gx<0||gy<0||gx>=w)return false;const i=gy*w+gx;return lab[i]===c.id;};
+  for(let x=0;x<bw;x++){st.push(x,0,x,bh-1);}for(let y=0;y<bh;y++){st.push(0,y,bw-1,y);}
+  while(st.length){const y=st.pop(),x=st.pop();if(x<0||y<0||x>=bw||y>=bh)continue;const k=y*bw+x;if(m[k])continue;if(isC(x,y))continue;m[k]=1;st.push(x+1,y,x-1,y,x,y+1,x,y-1);}
+  let ha=0,hx=0,hy=0,mx0=1e9,my0=1e9,mx1=-1,my1=-1;for(let y=0;y<bh;y++)for(let x=0;x<bw;x++){const k=y*bw+x;if(!m[k]&&!isC(x,y)){ha++;hx+=x+ox;hy+=y+oy;if(x<mx0)mx0=x;if(x>mx1)mx1=x;if(y<my0)my0=y;if(y>my1)my1=y;}}
+  return ha?{ha,hx:hx/ha,hy:hy/ha,hw:mx1-mx0+1,hh:my1-my0+1}:{ha:0};}
+function bucket(pts,cell){const map=new Map();pts.forEach((p,i)=>{const k=Math.floor(p.x/cell)+','+Math.floor(p.y/cell);if(!map.has(k))map.set(k,[]);map.get(k).push(i);});
+  return(x,y,r)=>{const out=[];const c0=Math.floor((x-r)/cell),c1=Math.floor((x+r)/cell),r0=Math.floor((y-r)/cell),r1=Math.floor((y+r)/cell);
+    for(let cx=c0;cx<=c1;cx++)for(let cy=r0;cy<=r1;cy++){const a=map.get(cx+','+cy);if(a)out.push(...a);}return out;};}
+function otsu(vals){const bins=100,hist=new Array(bins).fill(0);for(const v of vals)hist[Math.min(bins-1,Math.max(0,Math.floor(v*bins)))]++;
+  const tot=vals.length;let sum=0;for(let i=0;i<bins;i++)sum+=i*hist[i];let sB=0,wB=0,best=0,t1=0,t2=0;
+  for(let i=0;i<bins;i++){wB+=hist[i];if(!wB)continue;const wF=tot-wB;if(!wF)break;sB+=i*hist[i];const mB=sB/wB,mF=(sum-sB)/wF;const v=wB*wF*(mB-mF)*(mB-mF);
+    if(v>best*(1+1e-9)){best=v;t1=t2=i;}else if(v>=best*(1-1e-9))t2=i;}return((t1+t2)/2+1)/bins;}
+function lsq(rows){// (a,b)->(x,y) afin uydurma: x = p0 + p1*a + p2*b
+  let S=[[0,0,0],[0,0,0],[0,0,0]],bx=[0,0,0],by=[0,0,0];
+  for(const[a,b,x,y]of rows){const v=[1,a,b];for(let i=0;i<3;i++){for(let j=0;j<3;j++)S[i][j]+=v[i]*v[j];bx[i]+=v[i]*x;by[i]+=v[i]*y;}}
+  const solve=(A,B)=>{A=A.map(r=>r.slice());B=B.slice();for(let i=0;i<3;i++){let m=i;for(let r=i+1;r<3;r++)if(Math.abs(A[r][i])>Math.abs(A[m][i]))m=r;[A[i],A[m]]=[A[m],A[i]];[B[i],B[m]]=[B[m],B[i]];
+      if(Math.abs(A[i][i])<1e-9)return null;for(let r=0;r<3;r++){if(r===i)continue;const f=A[r][i]/A[i][i];for(let c=i;c<3;c++)A[r][c]-=f*A[i][c];B[r]-=f*B[i];}}return B.map((b,i)=>b/A[i][i]);};
+  const px=solve(S,bx),py=solve(S,by);if(!px||!py)return null;return(a,b)=>[px[0]+px[1]*a+px[2]*b,py[0]+py[1]*a+py[2]*b];}
+function darkAt(g,w,h,x,y,rIn,rR){const px=(X,Y)=>{X=Math.round(X);Y=Math.round(Y);return(X<0||Y<0||X>=w||Y>=h)?255:g[Y*w+X];};
+  let s=0,c=0;const r=Math.ceil(rIn);for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){if(dx*dx+dy*dy>rIn*rIn)continue;s+=px(x+dx,y+dy);c++;}const m=s/c;
+  const ring=[];for(let k=0;k<16;k++){const a=k*Math.PI/8;let v=0;for(let d=-1;d<=1;d++)v+=px(x+Math.cos(a)*(rR+d),y+Math.sin(a)*(rR+d));ring.push(v/3);}
+  ring.sort((a,b)=>a-b);const P=ring[11];return Math.max(0,Math.min(1,(P-m)/Math.max(P,40)));}
+
+function read(canvas,cfg){
+  const t0=performance.now();const w=canvas.width,h=canvas.height,L=Math.max(w,h);
+  const g=minGray(canvas);const bin=binarize(g,w,h);const{lab,comps}=label(bin,w,h);
+  // 1) aday balonlar: yuvarlak halka (ortalanmış boşluklu) ya da dolu yuvarlak
+  const sMin=L*0.004,sMax=L*0.04;const rings=[],solids=[];
+  const ringTest=(lb,c,minHole)=>{const hi=holeInfo(lb,w,c);return hi.ha>minHole*c.w*c.h&&hi.ha>0.55*hi.hw*hi.hh&&hi.hw/hi.hh>0.7&&hi.hw/hi.hh<1.43&&Math.hypot(hi.hx-c.x,hi.hy-c.y)<0.14*Math.max(c.w,c.h);};
+  // kopuk ince halkalar için 1 piksel genişletilmiş ikinci geçiş
+  {const d=label(dilate1(bin,w,h),w,h);for(const c of d.comps){if(c.w<sMin||c.h<sMin||c.w>sMax||c.h>sMax)continue;const asp=c.w/c.h;if(asp<0.7||asp>1.43)continue;
+      if(c.a/(c.w*c.h)<0.75&&ringTest(d.lab,c,0.07))rings.push({x:c.x,y:c.y,s:(c.w+c.h)/2-2,ring:true});}}
+  const ringNear=(x,y,s)=>rings.some(r=>Math.hypot(r.x-x,r.y-y)<0.35*s);
+  for(const c of comps){if(c.w<sMin||c.h<sMin||c.w>sMax||c.h>sMax)continue;const asp=c.w/c.h;if(asp<0.7||asp>1.43)continue;
+    const fill=c.a/(c.w*c.h);const o={x:c.x,y:c.y,s:(c.w+c.h)/2,fill};
+    if(fill<0.7&&ringTest(lab,c,0.2)){if(!ringNear(o.x,o.y,o.s)){o.ring=true;rings.push(o);}continue;}
+    if(fill>=0.55)solids.push(o);}
+  if(rings.length<cfg.opts*2)return{ok:false,ms:performance.now()-t0};
+  const rs=rings.map(r=>r.s).sort((a,b)=>a-b),ringMed=rs[Math.floor(rs.length/2)];
+  const cand=rings.filter(r=>r.s>ringMed*0.6&&r.s<ringMed*1.6).concat(solids.filter(o=>o.s>=ringMed*0.9&&o.s<=ringMed*2.4));
+  if(cand.length<cfg.opts*3)return{ok:false,ms:performance.now()-t0};
+  // 2) ızgara vektörlerini bul (komşu farklarının en sık iki yönü)
+  const cell=L*0.03,near=bucket(cand,cell);const vecs=[];
+  cand.forEach((p,i)=>{const ns=near(p.x,p.y,p.s*5).filter(j=>j!==i).map(j=>{const q=cand[j];return{j,d:Math.hypot(q.x-p.x,q.y-p.y)};})
+      .filter(o=>o.d>p.s*1.2&&o.d<p.s*5&&cand[o.j].s<p.s*2.2&&cand[o.j].s>p.s/2.2).sort((a,b)=>a.d-b.d).slice(0,4);
+    for(const o of ns){let vx=cand[o.j].x-p.x,vy=cand[o.j].y-p.y;if(vx<0||(vx===0&&vy<0)){vx=-vx;vy=-vy;}vecs.push([vx,vy]);}});
+  if(vecs.length<10)return{ok:false,ms:performance.now()-t0};
+  const AB=90,LB=60,Lmax=L*0.08,hist=new Float32Array(AB*LB);
+  const bin2=([vx,vy])=>{let a=Math.atan2(vy,vx);if(a<-Math.PI/2)a+=Math.PI;if(a>=Math.PI/2)a-=Math.PI;const ai=Math.min(AB-1,Math.floor((a+Math.PI/2)/Math.PI*AB));const li=Math.min(LB-1,Math.floor(Math.hypot(vx,vy)/Lmax*LB));return[ai,li];};
+  for(const v of vecs){const[ai,li]=bin2(v);for(let da=-1;da<=1;da++)for(let dl=-1;dl<=1;dl++){const a2=(ai+da+AB)%AB,l2=li+dl;if(l2<0||l2>=LB)continue;hist[a2*LB+l2]+=(da||dl)?0.5:1;}}
+  const peak=(excludeAng)=>{let best=-1,bv=0;for(let ai=0;ai<AB;ai++){if(excludeAng!=null){let d=Math.abs(ai-excludeAng);d=Math.min(d,AB-d);if(d<AB*50/180)continue;}for(let li=1;li<LB;li++){if(hist[ai*LB+li]>bv){bv=hist[ai*LB+li];best=ai*LB+li;}}}return best;};
+  const refine=(bi)=>{const ai=Math.floor(bi/LB),li=bi%LB;let sx=0,sy=0,n=0;for(const v of vecs){const[a2,l2]=bin2(v);let d=Math.abs(a2-ai);d=Math.min(d,AB-d);if(d<=1&&Math.abs(l2-li)<=1){// yönü tutarlı topla
+        let[vx,vy]=v;if(n){const r=[sx/n,sy/n];if(vx*r[0]+vy*r[1]<0){vx=-vx;vy=-vy;}}sx+=vx;sy+=vy;n++;}}return n?[sx/n,sy/n]:null;};
+  const b1=peak(null);if(b1<0)return{ok:false,ms:performance.now()-t0};const v1=refine(b1);const b2=peak(Math.floor(b1/LB));if(b2<0)return{ok:false,ms:performance.now()-t0};const v2=refine(b2);
+  if(!v1||!v2)return{ok:false,ms:performance.now()-t0};
+  // 3) ızgara komşuluğu ile blokları kur (her düğüme tamsayı koordinat)
+  const l1=Math.hypot(...v1),l2=Math.hypot(...v2),tol=0.25*Math.min(l1,l2);const coord=new Array(cand.length).fill(null);const lv=new Array(cand.length);const blocks=[];
+  for(let s=0;s<cand.length;s++){if(coord[s])continue;const blk={nodes:[]};coord[s]=[0,0,blocks.length];lv[s]=[v1,v2];const q=[s];
+    while(q.length){const i=q.shift();blk.nodes.push(i);const p=cand[i],[a,b]=coord[i];const[u1,u2]=lv[i];
+      const steps=[[u1,1,0,0,1],[u1,-1,0,0,-1],[u2,0,1,1,1],[u2,0,-1,1,-1]];
+      for(const[v,da,db,ax,sg]of steps){const tx=p.x+sg*v[0],ty=p.y+sg*v[1];let bj=-1,bd=tol;for(const j of near(tx,ty,tol)){const d=Math.hypot(cand[j].x-tx,cand[j].y-ty);if(d<bd){bd=d;bj=j;}}
+        if(bj>=0&&!coord[bj]){coord[bj]=[a+da,b+db,blocks.length];const m=[sg*(cand[bj].x-p.x),sg*(cand[bj].y-p.y)];lv[bj]=ax===0?[m,u2]:[u1,m];q.push(bj);}}}
+    blocks.push(blk);}
+  let big=blocks.filter(b=>b.nodes.length>=Math.max(4,cfg.opts-1));
+  if(!big.length)return{ok:false,ms:performance.now()-t0};
+  // hangi eksen şıklar ekseni? (blokların o eksendeki genişliği = şık sayısı)
+  const ext=(b,k)=>{let mn=1e9,mx=-1e9;for(const i of b.nodes){mn=Math.min(mn,coord[i][k]);mx=Math.max(mx,coord[i][k]);}return[mn,mx];};
+  let votesA=0,votesB=0;for(const b of big){const[a0,a1]=ext(b,0),[c0,c1]=ext(b,1);if(a1-a0+1===cfg.opts)votesA+=b.nodes.length;if(c1-c0+1===cfg.opts)votesB+=b.nodes.length;}
+  if(!votesA&&!votesB)return{ok:false,ms:performance.now()-t0};
+  const oK=votesA>=votesB?0:1,qK=1-oK;const vo=oK===0?v1:v2,vq=oK===0?v2:v1,lo=Math.hypot(...vo),lq=Math.hypot(...vq);
+  // her blokta: en dolu ardışık şık penceresi, en az (şık-1) balonlu ardışık satırlar
+  big=big.map(b=>{const cnt=new Map();for(const i of b.nodes){const o=coord[i][oK];cnt.set(o,(cnt.get(o)||0)+1);}
+      let best=null,bv=-1;for(const o of cnt.keys()){let v=0;for(let k=0;k<cfg.opts;k++)v+=cnt.get(o+k)||0;if(v>bv){bv=v;best=o;}}
+      const inW=b.nodes.filter(i=>coord[i][oK]>=best&&coord[i][oK]<best+cfg.opts);const rowsC=new Map();for(const i of inW){const q=coord[i][qK];rowsC.set(q,(rowsC.get(q)||0)+1);}
+      const good=[...rowsC.keys()].filter(q=>rowsC.get(q)>=cfg.opts-1).sort((a,b)=>a-b);if(!good.length)return null;
+      let runs=[],cur=[good[0]];for(let k=1;k<good.length;k++){if(good[k]===cur[cur.length-1]+1)cur.push(good[k]);else{runs.push(cur);cur=[good[k]];}}runs.push(cur);
+      runs.sort((a,b)=>b.length-a.length);const run=runs[0];if(run.length<1)return null;
+      const ringsIn=q=>inW.filter(i=>coord[i][qK]===q&&cand[i].ring).length;
+      while(run.length&&ringsIn(run[0])<2)run.shift();while(run.length&&ringsIn(run[run.length-1])<2)run.pop();if(!run.length)return null;
+      const keep=inW.filter(i=>coord[i][qK]>=run[0]&&coord[i][qK]<=run[run.length-1]);if(keep.length<cfg.opts*Math.max(1,run.length)*0.7)return null;
+      return{nodes:keep,o0f:best,o1f:best+cfg.opts-1};}).filter(Boolean).filter(b=>b.nodes.length>=cfg.opts);
+  if(!big.length)return{ok:false,ms:performance.now()-t0};
+  // 4) her blok için afin uydur, başlık (A B C D E) hangi uçta?
+  const allC=comps.filter(c=>c.w>sMin*0.6&&c.h>sMin*0.6&&c.w<sMax*1.5&&c.h<sMax*1.5);const nearAll=bucket(allC,cell);
+  const fit=b=>{b.f=lsq(b.nodes.map(i=>{const c=coord[i];return[c[oK],c[qK],cand[i].x,cand[i].y];}));b.o0=b.o0f;b.o1=b.o1f;[b.q0,b.q1]=ext(b,qK);};
+  big.forEach(fit);big=big.filter(b=>b.f);
+  // aynı sütunun kopmuş parçalarını birleştir (soru ekseni boyunca devam ediyorsa)
+  for(let changed=true;changed;){changed=false;
+    outer:for(const A of big)for(const B of big){if(A===B)continue;const pB=B.f(B.o0,B.q0),pB2=B.f(B.o1,B.q0);
+      for(let k=1;k<=3;k++){const pA=A.f(A.o0,A.q1+k),pA2=A.f(A.o1,A.q1+k);
+        if(Math.hypot(pA[0]-pB[0],pA[1]-pB[1])<0.35*lq&&Math.hypot(pA2[0]-pB2[0],pA2[1]-pB2[1])<0.45*lq){
+          const dq=A.q1+k-B.q0,dO=A.o0-B.o0;for(const i of B.nodes){coord[i][qK]+=dq;coord[i][oK]+=dO;}
+          A.nodes=A.nodes.concat(B.nodes);fit(A);big=big.filter(x=>x!==B);changed=true;break outer;}}}}
+  let headMinVotes=0,headMaxVotes=0;
+  for(const b of big){
+    const hits=(qq,extra)=>{let n=0;for(let o=b.o0;o<=b.o1;o++){let found=false;for(const t0 of [0.55,0.7,0.85,1.0,1.15]){const t=t0+(extra||0);const[x,y]=b.f(o,qq<b.q0?b.q0-t:b.q1+t);
+          for(const j of nearAll(x,y,lo*0.3)){const c=allC[j];if(Math.hypot(c.x-x,c.y-y)<lo*0.3){found=true;break;}}if(found)break;}if(found)n++;}return n;};
+    b.hMin=hits(b.q0-1);b.hMax=hits(b.q1+1);b.hMin2=hits(b.q0-1,1);b.hMax2=hits(b.q1+1,1);headMinVotes+=Math.max(b.hMin,b.hMin2*0.8);headMaxVotes+=Math.max(b.hMax,b.hMax2*0.8);}
+  big=big.filter(b=>b.f);if(!big.length)return{ok:false,ms:performance.now()-t0};
+  const headAtMin=headMinVotes>=headMaxVotes;
+  if(Math.max(headMinVotes,headMaxVotes)<Math.min(cfg.opts,3))return{ok:false,noHeader:true,ms:performance.now()-t0};
+  // yönler: aşağı = başlıktan sorulara; sağ = aşağının saat yönünde 90°'si; A sol tarafta
+  const down=headAtMin?[vq[0]/lq,vq[1]/lq]:[-vq[0]/lq,-vq[1]/lq];const right=[down[1],-down[0]];
+  const oSign=(vo[0]*right[0]+vo[1]*right[1])>=0?1:-1;
+  // başlığın ilk satıra uzaklığını (t*) öğren; bir blokta başlık t*+1'deyse ilk satır algılanmamıştır → ekle
+  const hitsAt=(b,t,tolF)=>{let n=0;const qq=headAtMin?b.q0-t:b.q1+t;for(let o=b.o0;o<=b.o1;o++){const[x,y]=b.f(o,qq);for(const j of nearAll(x,y,lo*tolF)){const c=allC[j];if(Math.hypot(c.x-x,c.y-y)<lo*tolF){n++;break;}}}return n;};
+  const ts=[];for(const b of big){let bt=null,bh=0;for(let t=0.4;t<=1.3;t+=0.05){const hh=hitsAt(b,t,0.2);if(hh>bh){bh=hh;bt=t;}}if(bh>=cfg.opts-1)ts.push(bt);}
+  if(ts.length){ts.sort((a,b)=>a-b);const tS=ts[Math.floor(ts.length/2)];
+    for(const b of big){const h0=hitsAt(b,tS,0.2),h1=hitsAt(b,tS+1,0.2);if(h1>=cfg.opts-1&&h1>h0){if(headAtMin)b.q0--;else b.q1++;}}}
+  // 5) blokları sırala (önce sağa doğru sütunlar, sonra aşağı) ve soruları numarala
+  for(const b of big){const firstQ=headAtMin?b.q0:b.q1;const[x,y]=b.f(oSign>0?b.o0:b.o1,firstQ);b.rx=x*right[0]+y*right[1];b.dy=x*down[0]+y*down[1];}
+  big.sort((a,b)=>Math.abs(a.rx-b.rx)>lo*cfg.opts*0.6?a.rx-b.rx:a.dy-b.dy);
+  // eksik satırlar: kısa blokları standart sütun uzunluğuna, gerekirse son bloğu soru sayısına tamamla
+  const lenOf=b=>b.q1-b.q0+1;let total=big.reduce((s,b)=>s+lenOf(b),0);const std=Math.max(...big.map(lenOf));
+  const inImg=(x,y)=>x>=0&&y>=0&&x<w&&y<h;
+  let grown=0;const grow=(b,k)=>{for(let i=0;i<k;i++){const nq=headAtMin?b.q1+1:b.q0-1;const p1=b.f(b.o0,nq),p2=b.f(b.o1,nq);if(!inImg(...p1)||!inImg(...p2))return;if(headAtMin)b.q1++;else b.q0--;total++;grown++;}};
+  for(const b of big){if(total>=cfg.n)break;if(b!==big[big.length-1]&&lenOf(b)<std)grow(b,Math.min(std-lenOf(b),cfg.n-total));}
+  if(total<cfg.n&&big.length)grow(big[big.length-1],cfg.n-total);
+  if(Math.min(lo,lq)<L*0.012)return{ok:false,tooSmall:true,corners:null,ms:performance.now()-t0};
+  // tutarlılık: her bloğun ızgara adımları birbirine benzemeli (yanlış uydurmayı reddet)
+  {const vecs=big.map(b=>{const p=b.f(b.o0,b.q0),po=b.f(b.o0+1,b.q0),pq=b.f(b.o0,b.q0+1);return[[po[0]-p[0],po[1]-p[1]],[pq[0]-p[0],pq[1]-p[1]]];});
+    const med=k=>{const xs=vecs.map(v=>v[k][0]).sort((a,b)=>a-b),ys=vecs.map(v=>v[k][1]).sort((a,b)=>a-b);const m=Math.floor(vecs.length/2);return[xs[m],ys[m]];};
+    const mo=med(0),mq=med(1);for(const v of vecs){if(Math.hypot(v[0][0]-mo[0],v[0][1]-mo[1])>0.15*Math.hypot(...mo)||Math.hypot(v[1][0]-mq[0],v[1][1]-mq[1])>0.15*Math.hypot(...mq))return{ok:false,unstable:true,ms:performance.now()-t0};}}
+  const qs=[];
+  for(const b of big){const nq=b.q1-b.q0+1;for(let k=0;k<nq;k++){const qq=headAtMin?b.q0+k:b.q1-k;const pts=[];
+      for(let i=0;i<cfg.opts;i++){const oo=oSign>0?b.o0+i:b.o1-i;pts.push(b.f(oo,qq));}qs.push(pts);}}
+  if(qs.length<cfg.n&&!cfg.allowPartial)return{ok:false,partial:true,found:qs.length,ms:performance.now()-t0};
+  const use=qs.slice(0,Math.min(cfg.n,qs.length));
+  // 6) koyuluk ve karar
+  const sp=Math.min(lo,lq),rIn=Math.max(2.5,sp*0.22),rR=sp*0.5;
+  const qd=use.map(pts=>pts.map(([x,y])=>darkAt(g,w,h,x,y,rIn,rR)));
+  const all=[].concat(...qd);let T=all.length>3?otsu(all):0.3;T=Math.max(0.2,Math.min(0.55,T));
+  let amb=0;const answers=qd.map(f=>{const idx=f.map((v,j)=>j).sort((a,b)=>f[b]-f[a]);const top=f[idx[0]];let a='';
+    if(top>=T){a='ABCDE'[idx[0]];if(f.length>1){const s2=f[idx[1]];if(s2>=T&&s2>=top*0.6)a='*';}}
+    if((top>=T*0.7&&top<T)||(a&&a!=='*'&&f[idx[1]]>=T*0.85))amb++;return a;});
+  const qpts=use.map(pts=>pts.map(([x,y])=>[x,y,sp*0.32]));
+  // blok çerçeveleri (çizim için)
+  const outlines=big.map(b=>{const c=[[b.o0-0.6,b.q0-0.6],[b.o1+0.6,b.q0-0.6],[b.o1+0.6,b.q1+0.6],[b.o0-0.6,b.q1+0.6]];return c.map(([o,q])=>b.f(o,q));});
+  // ad alanı: başlığın üstündeki bant (sayfa yönünde düz kesilmiş)
+  let nameCrop=null;try{const minDy=Math.min(...big.map(b=>b.dy)),minRx=Math.min(...big.map(b=>b.rx)),maxRx=Math.max(...big.map(b=>b.rx))+lo*(cfg.opts-1);
+    const u0=minRx-lo*5,u1=maxRx+lo*4,v0=minDy-lq*7.5,v1=minDy-lq*1.3;const ow=Math.round(u1-u0),oh=Math.round(v1-v0);
+    if(ow>20&&oh>10){nameCrop=document.createElement('canvas');nameCrop.width=ow;nameCrop.height=oh;const x=nameCrop.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,ow,oh);
+      x.setTransform(right[0],down[0],right[1],down[1],-u0,-v0);x.drawImage(canvas,0,0);}}catch(e){nameCrop=null;}
+  return{ok:true,bub:true,grown,answers,qd,T,amb,qpts,outlines,corners:outlines[0],nameCrop,found:qs.length,id:'',booklet:'A',ms:performance.now()-t0};
+}
+return{read};
+})();
+
 /* ================= BAŞLAT ================= */
 for(const b in S.keys)S.keys[b]=fixKey(S.keys[b]);
-freeSync();fillCfg();applyMode();renderHeader();requestAnimationFrame(renderForm);window.addEventListener('resize',()=>{if($('#t-sinav').classList.contains('on'))renderForm();});
+freeSync();fillCfg();applyMode();renderCurBook();renderHeader();requestAnimationFrame(renderForm);window.addEventListener('resize',()=>{if($('#t-sinav').classList.contains('on'))renderForm();});
 if(!storageOK)toast('Tarayıcı hafızası kapalı: sayfa kapanınca veriler silinir',4000);
-window.__T={OMR,FREE,layout,drawForm,get S(){return S},get L(){return L},buildXlsx,grade,saveStudent,makePdf,formCanvas,readAny,ensureFree,edTap,openEditor,closeEditor,IDB,addTemplate,accuracyRows,setEdMode};
+window.__T={OMR,FREE,BUB,acceptBalon,layout,drawForm,get S(){return S},get L(){return L},buildXlsx,grade,saveStudent,makePdf,formCanvas,readAny,ensureFree,edTap,openEditor,closeEditor,IDB,addTemplate,accuracyRows,setEdMode};
 </script>
 </body>
 </html>
