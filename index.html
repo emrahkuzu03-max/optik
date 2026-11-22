@@ -51,7 +51,7 @@ input[type=text],input[type=number],select{width:100%;padding:10px;border:1px so
 </style>
 </head>
 <body>
-<header><h1 id="hTitle">Optik Okuyucu</h1></header>
+<header style="display:flex;align-items:center;gap:8px"><h1 id="hTitle" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Optik Okuyucu</h1><span id="ver" style="font-size:12px;opacity:.85;background:rgba(255,255,255,.15);padding:3px 8px;border-radius:10px;white-space:nowrap">v2.5 · 22.11</span></header>
 <div class="steps">
   <button data-v="1" class="on"><span class="n">1</span>Boş kâğıt</button>
   <button data-v="2"><span class="n">2</span>Anahtar</button>
@@ -106,7 +106,7 @@ input[type=text],input[type=number],select{width:100%;padding:10px;border:1px so
     <div id="stuBox" style="display:none">
       <div class="score"><div class="big" id="sBig"></div><div><div id="sDyb" style="font-weight:600"></div><div class="dyb" id="sNote"></div></div></div>
       <div class="grp" id="sGrp"></div>
-      <div class="btns"><button class="btn ok" id="sSave">✓ Kaydet ve sıradaki</button><button class="btn warn" id="sDrop" style="flex:0 0 auto">Vazgeç</button></div>
+      <div class="btns"><button class="btn ok" id="sSave">✓ Kaydet ve sıradaki</button><button class="btn sec" id="sRetry" style="flex:0 0 auto">↻ Tekrar oku</button></div>
       <img id="sName" class="nameimg" alt="">
       <label class="f">Ad soyad (isteğe bağlı)</label><input type="text" id="sNameTxt">
       <div class="hint" style="margin-top:12px">Merak ederseniz okunan kâğıt aşağıda:</div>
@@ -114,7 +114,7 @@ input[type=text],input[type=number],select{width:100%;padding:10px;border:1px so
       <div class="cvwrap" id="w3"><canvas id="c3"></canvas></div>
       <div class="zoom"><button class="btn sec" data-z3="-">−</button><button class="btn sec" data-z3="+">+</button></div>
       <div class="hint">Yanlış okunan bir soru varsa öğrencinin işaretlediği balona dokunun (tekrar dokunmak kaldırır).</div>
-      <div class="btns"><button class="btn ok" id="sSaveOnly">✓ Kaydet</button></div>
+      <div class="btns"><button class="btn ok" id="sSaveOnly">✓ Kaydet</button><button class="btn warn" id="sDrop" style="flex:0 0 auto">Vazgeç</button></div>
     </div>
   </div>
 </section>
@@ -808,6 +808,7 @@ function saveCur(){if(!cur)return false;const g=grade(cur.ans);
   persist();stepState();toast(`Kaydedildi: ${fmt(g.score)} puan`);cur=null;$('#stuBox').style.display='none';return true;}
 $('#sSave').onclick=()=>{const sig=cur?cur.auto.map(a=>a||'-').join(''):null;if(!saveCur())return;if(CAM.on)camResume(sig);else $('#fStu').click();};
 $('#sSaveOnly').onclick=()=>{const sig=cur?cur.auto.map(a=>a||'-').join(''):null;if(saveCur()&&CAM.on)camResume(sig);};
+$('#sRetry').onclick=()=>{cur=null;$('#stuBox').style.display='none';if(CAM.on)camResume(null);else $('#fStu').click();};
 $('#sDrop').onclick=()=>{cur=null;$('#stuBox').style.display='none';if(CAM.on)camResume(null);};
 $('#fStu').onchange=e=>{const f=e.target.files[0];e.target.value='';if(f)onStu(f);};
 $('#fStu2').onchange=e=>{const f=e.target.files[0];e.target.value='';if(f)onStu(f);};
