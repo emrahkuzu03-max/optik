@@ -37,7 +37,7 @@ input[type=text],input[type=number],select{width:100%;padding:10px;border:1px so
 .score{display:flex;align-items:center;gap:14px;margin-top:10px}
 .score .big{font-size:44px;font-weight:800;color:var(--p);line-height:1}
 .score .dyb{font-size:14px;color:var(--mut)}
-.fe{display:flex;gap:6px;align-items:center;margin:6px 0;flex-wrap:wrap}.fe i{width:14px;height:14px;border-radius:3px;flex:0 0 auto}.fe .dim{font-size:12px;color:var(--mut);flex:0 0 auto}.fe select{flex:1 1 130px;min-width:120px}.fe input{flex:2 1 140px;min-width:120px}
+.fsum{font-size:15px;margin:8px 0 6px;line-height:1.45}.ftabs{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}.ftabs .btn{flex:1 1 30%;display:flex;flex-direction:column;align-items:center;padding:8px 6px;font-size:14px;line-height:1.2}.ftabs small{font-weight:500;opacity:.85;font-size:12px}.fpanel{border:1px solid #d0d7e2;border-radius:12px;padding:4px 12px 10px;margin:4px 0 10px;background:#f8fafc}.fdet{margin:8px 0}.fdet summary{cursor:pointer;color:var(--mut);font-size:14px;padding:6px 0}.fe{display:flex;gap:6px;align-items:center;margin:6px 0;flex-wrap:wrap}.fe i{width:14px;height:14px;border-radius:3px;flex:0 0 auto}.fe .dim{font-size:12px;color:var(--mut);flex:0 0 auto}.fe select{flex:1 1 130px;min-width:120px}.fe input{flex:2 1 140px;min-width:120px}
 .bookSel{align-items:center}.bookSel span{font-weight:600;flex:0 0 auto}.bookSel small{font-weight:500;opacity:.8}
 #stuBox{scroll-margin-top:120px}.score .big small{display:block;font-size:13px;font-weight:600;color:var(--mut);letter-spacing:.3px}
 .grp{display:flex;gap:8px;margin:10px 0 2px}.grp div{flex:1;border:1px solid #d0d7e2;border-radius:10px;padding:7px 6px;text-align:center;background:#f6f8fb}.grp b{display:block;font-size:22px;color:var(--p)}.grp span{font-size:12px;color:var(--mut)}.grp span:first-child{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.25}
@@ -53,7 +53,7 @@ input[type=text],input[type=number],select{width:100%;padding:10px;border:1px so
 </style>
 </head>
 <body>
-<header style="display:flex;align-items:center;gap:8px"><h1 id="hTitle" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Optik Okuyucu</h1><span id="ver" style="font-size:12px;opacity:.85;background:rgba(255,255,255,.15);padding:3px 8px;border-radius:10px;white-space:nowrap">v3.0 · 22.11</span></header>
+<header style="display:flex;align-items:center;gap:8px"><h1 id="hTitle" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Optik Okuyucu</h1><span id="ver" style="font-size:12px;opacity:.85;background:rgba(255,255,255,.15);padding:3px 8px;border-radius:10px;white-space:nowrap">v3.1 · 22.11</span></header>
 <div class="steps">
   <button data-v="1" class="on"><span class="n">1</span>Boş kâğıt</button>
   <button data-v="2"><span class="n">2</span>Anahtar</button>
@@ -667,6 +667,9 @@ const KW=['ÖĞRENCİ','KİMLİK','KİTAPÇIK','CEVAP','CEVAPLAR','SINAV','SOYAD
 const norm=t=>(t||'').toLocaleUpperCase('tr').replace(/[^A-ZÇĞİÖŞÜÂ]/g,'');
 function lev(a,b){const m=a.length,n=b.length;if(Math.abs(m-n)>2)return 9;const d=[];for(let i=0;i<=m;i++){d[i]=[i];}for(let j=1;j<=n;j++)d[0][j]=j;for(let i=1;i<=m;i++)for(let j=1;j<=n;j++)d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));return d[m][n];}
 function kwScore(words){let s=0;const seen=new Set();words.forEach(w=>{const t=norm(w.text);if(t.length<3)return;for(const k of KW){if(seen.has(k))continue;if(t===k||(k.length>=5&&lev(t,k)<=1)){seen.add(k);s++;break;}}});return s;}
+const COURSES=[['ATATÜRK',"Atatürk İlkeleri ve İnkılap Tarihi"],['İNKILAP',"Atatürk İlkeleri ve İnkılap Tarihi"],['TÜRK',"Türk Dili"],['DİLİ',"Türk Dili"],['İNGİLİZ',"İngilizce"],['NGİLİZ',"İngilizce"],['ENGLISH',"İngilizce"],['ALMANCA',"Almanca"],['MATEMATİK',"Matematik"],['FİZİK',"Fizik"],['KİMYA',"Kimya"],['BİYOLOJİ',"Biyoloji"],['TARİH',"Tarih"],['COĞRAFYA',"Coğrafya"],['FELSEFE',"Felsefe"],['DİN',"Din Kültürü"],['FEN',"Fen Bilimleri"],['SOSYAL',"Sosyal Bilgiler"],['BİLGİSAYAR',"Bilgisayar"],['ENFORMATİK',"Enformatik"]];
+function courseName(lb){const W=(lb||'').toLocaleUpperCase('tr').split(/\s+/).map(norm).filter(w=>w.length>=3);if(!W.length)return'';
+  for(const[k,v]of COURSES){if(W.some(w=>w===k||w.includes(k)||(k.length>=5&&w.length>=4&&lev(w.slice(0,k.length),k)<=1)))return v;}return'';}
 /* boş formdan şablon: dik görüntü, bloklar ve rolleri. ocr(canvas)→[{text,conf,bbox:{x0,y0,x1,y1}}] isteğe bağlı */
 async function setup(canvas,ocr,onStep,forceRot){useCv();
   const det=detect(canvas);if(!det.ok||!det.blocks.length)return{ok:false,msg:'Balon bulunamadı'};
@@ -677,12 +680,15 @@ async function setup(canvas,ocr,onStep,forceRot){useCv();
   // yalnız blokların çevresindeki şeritleri oku (hızlı): her bloğun üstü ve iki yanı
   const strips=(rot)=>{const up=mkUp(rot,true);const sp=det.sp;const R=[];
     det.blocks.forEach(bk=>{if(bk.ni*bk.nj<4)return;const g=upGrid(bk,rot,W,H);const[x0,y0,x1,y1]=bbox(g.P);
-      R.push([x0-sp,y0-sp*3.4,x1+sp,y0-sp*0.4]);// üst
+      R.push([x0-sp,y0-sp*4.6,x1+sp,y0-sp*0.3]);// üst
       if(g.rows===1||g.cols===1)R.push([x0-sp*16,y0-sp*2,x0,y1+sp*2],[x1,y0-sp*2,x1+sp*16,y1+sp*2]);});
-    return R.map(([a,b2,c,d])=>{a=Math.max(0,Math.round(a));b2=Math.max(0,Math.round(b2));c=Math.min(up.width,Math.round(c));d=Math.min(up.height,Math.round(d));if(c-a<10||d-b2<10)return null;
-      const k=document.createElement('canvas');k.width=c-a;k.height=d-b2;k.getContext('2d').drawImage(up,a,b2,c-a,d-b2,0,0,c-a,d-b2);return{k,a,b:b2};}).filter(Boolean);};
+    // tüm cevap bloklarının üstünü kapsayan tek şerit (başlıklar bir satırda daha iyi okunur)
+    const AB=det.blocks.filter(bk=>{const L=Math.max(bk.ni,bk.nj),Sm=Math.min(bk.ni,bk.nj);return Sm>=4&&Sm<=5&&L>=10;}).map(bk=>bbox(upGrid(bk,rot,W,H).P));
+    if(AB.length){const x0=Math.min(...AB.map(b=>b[0])),x1=Math.max(...AB.map(b=>b[2])),y0=Math.min(...AB.map(b=>b[1]));R.push([x0-sp*2,y0-sp*4.6,x1+sp*2,y0-sp*0.3,1]);}
+    return R.map(([a,b2,c,d,z1])=>{a=Math.max(0,Math.round(a));b2=Math.max(0,Math.round(b2));c=Math.min(up.width,Math.round(c));d=Math.min(up.height,Math.round(d));if(c-a<10||d-b2<10)return null;
+      const z=z1?1:((d-b2)<160?2:1),pd=24;const k=document.createElement('canvas');k.width=(c-a)*z+2*pd;k.height=(d-b2)*z+2*pd;const kx=k.getContext('2d');kx.fillStyle='#fff';kx.fillRect(0,0,k.width,k.height);kx.drawImage(up,a,b2,c-a,d-b2,pd,pd,(c-a)*z,(d-b2)*z);return{k,a,b:b2,z,pd};}).filter(Boolean);};
   if(ocr){for(const rot of rots){onStep&&onStep(`Yazılar okunuyor (${rots.indexOf(rot)+1}/${rots.length})…`);const words=[];
-      try{const S=strips(rot);for(const s0 of S){const ws=await ocr(s0.k);ws.forEach(w=>{words.push({text:w.text,conf:w.conf,bbox:{x0:w.bbox.x0+s0.a,x1:w.bbox.x1+s0.a,y0:w.bbox.y0+s0.b,y1:w.bbox.y1+s0.b}});});}}catch(e){console.log('ocr',e);}
+      try{const S=strips(rot);for(const s0 of S){const ws=await ocr(s0.k);const tf=v=>(v-s0.pd)/s0.z;ws.forEach(w=>{words.push({text:w.text,conf:w.conf,bbox:{x0:tf(w.bbox.x0)+s0.a,x1:tf(w.bbox.x1)+s0.a,y0:tf(w.bbox.y0)+s0.b,y1:tf(w.bbox.y1)+s0.b}});});}}catch(e){console.log('ocr',e);}
       const sc=kwScore(words);if(sc>best.score)best={rot,score:sc,words};if(sc>=4)break;}}
   const rot=best.rot,words=best.words||[];
   const up=mkUp(rot,false);
@@ -700,13 +706,13 @@ async function setup(canvas,ocr,onStep,forceRot){useCv();
     else if((rows===1&&cols>=2&&cols<=6)||(cols===1&&rows>=2&&rows<=6&&false)){b.role='bookc';b.bscore=(has(near(b.box,'side',sp*16).concat(near(b.box,'top',sp*8)),'KİTAPÇIK')?10:0)+(cols===4?2:cols===2||cols===3?1:0);}
     else b.role='skip';
     // başlık metni: bloğun hemen üstündeki satır(lar), soldan sağa
-    const T=wd.filter(w=>w.cx>=b.box[0]-sp*0.5&&w.cx<=b.box[2]+sp*0.5&&w.cy<b.box[1]&&w.cy>b.box[1]-sp*2.6).sort((a,c)=>a.cy-c.cy);
+    const T=wd.filter(w=>w.cx>=b.box[0]-sp*0.5&&w.cx<=b.box[2]+sp*0.5&&w.cy<b.box[1]&&w.cy>b.box[1]-sp*4.2).sort((a,c)=>a.cy-c.cy);
     const lines=[];T.forEach(w=>{const L2=lines.find(l=>Math.abs(l.cy-w.cy)<sp*0.6);if(L2){L2.w.push(w);}else lines.push({cy:w.cy,w:[w]});});
     b.label=lines.map(l=>l.w.sort((a,c)=>a.cx-c.cx).map(w=>w.t).join(' ')).join(' ').replace(/\s+/g,' ').trim();});
   {const bc=blocks.filter(b=>b.role==='bookc').sort((a,c)=>c.bscore-a.bscore);bc.forEach((b,i)=>b.role=i===0?'book':'skip');}
   // cevap bloklarını sırala: soldan sağa sütunlar, içinde yukarıdan aşağı
   const ans=blocks.filter(b=>b.role==='ans').sort((a,b)=>{const dx=a.box[0]-b.box[0];if(Math.abs(dx)>sp*3)return dx;return a.box[1]-b.box[1];});
-  let q=0;ans.forEach((b,i)=>{b.q0=q+1;q+=b.rows;b.q1=q;const lb=b.label.replace(/[^A-Za-zÇĞİÖŞÜçğıöşü ]/g,' ').replace(/\s+/g,' ').trim();b.name=lb.length>=3?lb:`Bölüm ${i+1}`;});
+  let q=0;ans.forEach((b,i)=>{b.q0=q+1;q+=b.rows;b.q1=q;const lb=b.label.replace(/[^A-Za-zÇĞİÖŞÜçğıöşü ]/g,' ').replace(/\s+/g,' ').trim();b.name=courseName(lb)||(lb.length>=3?lb:`Sınav ${i+1}`);});
   ['no','tc','name','book'].forEach(r=>{const L=blocks.filter(b=>b.role===r);L.slice(1).forEach(b=>b.role='skip');});
   return{ok:true,rot,ocrScore:best.score,up,sp,blocks,W:up.width,H:up.height};}
 /* ---------- okuma ---------- */
@@ -759,9 +765,9 @@ function read(canvas,tpl,opt){useCv();opt=opt||{};const t0=performance.now();
     const D=Q.map(row=>row.map(([x,y])=>darkness(M,W,H,x,y,det.sp)));return{tb,Q,D};});
   red.delete();
   // cevaplar
-  const ansB=projB.filter(p=>p&&p.tb.role==='ans');const groups=[];ansB.forEach(p=>p.D.forEach(row=>groups.push(row)));
+  const ansB=projB.filter(p=>p&&p.tb.role==='ans');const useOf=tb=>Math.min(tb.rows,tb.use||tb.rows);const groups=[];ansB.forEach(p=>p.D.slice(0,useOf(p.tb)).forEach(row=>groups.push(row)));
   const dec=decide(groups,0.18);const answers={},qf=[],tqP=[];let amb=0,qi=0;const LET='ABCDEFGH';
-  ansB.forEach(p=>p.D.forEach((row,r)=>{const d=dec[qi];const n=p.tb.q0+r;answers[n]=d.a>=0?LET[d.a]:d.a===-2?'*':'';if(d.amb)amb++;qf[n-1]=row;tqP[n-1]=p.Q[r];qi++;}));
+  ansB.forEach(p=>p.D.slice(0,useOf(p.tb)).forEach((row,r)=>{const d=dec[qi];const n=p.tb.q0+r;answers[n]=d.a>=0?LET[d.a]:d.a===-2?'*':'';if(d.amb)amb++;qf[n-1]=row;tqP[n-1]=p.Q[r];qi++;}));
   // alanlar: sütun başına seçim
   const fields={};const fdec=(p,alpha)=>{const cols=[];for(let c=0;c<p.tb.cols;c++){cols.push(p.D.map(row=>row[c]));}const d=decide(cols,0.2);return d.map(o=>o.a>=0?alpha[o.a]:o.a===-2?'?':'');};
   projB.forEach(p=>{if(!p)return;const r=p.tb.role;
@@ -855,9 +861,11 @@ async function getOcr(){try{if(!window.Tesseract)await loadScript('https://cdn.j
 function looksLikeForm(det){return det.ok&&det.blocks.some(b=>{const L=Math.max(b.ni,b.nj),Sm=Math.min(b.ni,b.nj);return (L===10&&Sm>=6)||(L===10&&Sm>=6)||(Sm===10&&L>=6&&L<=14)||(L>=26&&L<=30&&Sm>=3);});}
 const ROLE={ans:'Cevap bölümü',no:'Öğrenci No',tc:'TC Kimlik No',name:'Ad Soyad',book:'Kitapçık türü',skip:'Kullanma'};
 const RCOL={ans:'#2a9d5c',no:'#1f6feb',tc:'#f08c00',name:'#b5179e',book:'#d62828',skip:'#999'};
+function qLabel(n){const T=S.tpl;if(T&&T.kind==='grid'&&T.sections&&T.sections.length>1){const q=T.qs[n-1];if(q)return `${q.sec} ${q.local}`;}return String(n);}
+function qList(L){if(S.tpl&&S.tpl.kind==='grid'&&S.tpl.sections&&S.tpl.sections.length>1){const g={};L.forEach(n=>{const q=S.tpl.qs[n-1];if(!q)return;(g[q.sec]=g[q.sec]||[]).push(q.local);});return Object.entries(g).map(([k,v])=>`${k}: ${v.join(', ')}`).join('; ');}return L.join(', ');}
 function formRenumber(){const T=S.tpl;const sp=T.sp;const ans=T.blocks.filter(b=>b.role==='ans').sort((a,b)=>{const dx=a.box[0]-b.box[0];if(Math.abs(dx)>sp*3)return dx;return a.box[1]-b.box[1];});
-  let q=0;ans.forEach((b,i)=>{b.q0=q+1;q+=b.rows;b.q1=q;if(!b.name)b.name='Bölüm '+(i+1);});
-  T.qs=[];ans.forEach(b=>b.P.forEach((row,r)=>T.qs.push({n:b.q0+r,pts:row,bubble:true,sec:b.name})));T.sections=ans.map(b=>({name:b.name,q0:b.q0,q1:b.q1}));
+  let q=0;ans.forEach((b,i)=>{b.use=Math.max(1,Math.min(b.rows,b.use||b.rows));b.q0=q+1;q+=b.use;b.q1=q;if(!b.name)b.name='Sınav '+(i+1);});
+  T.qs=[];ans.forEach(b=>b.P.slice(0,b.use).forEach((row,r)=>T.qs.push({n:b.q0+r,pts:row,bubble:true,sec:b.name,local:r+1})));T.sections=ans.map(b=>({name:b.name,q0:b.q0,q1:b.q1}));
   S.cfg.n=q;S.cfg.opts=Math.max(...ans.map(b=>b.cols),4);$('#cN').value=S.cfg.n;$('#cOpts').value=String(S.cfg.opts);
   if(T.sections.length>1){S.cfg.groups=T.sections.map(s=>`${s.name.replace(/[:;]/g,' ')}:${s.q0}-${s.q1}`).join('; ');S.cfg.groupScale='each';}else{S.cfg.groupScale='';}
   $('#cGroups').value=S.cfg.groups||'';}
@@ -875,17 +883,28 @@ async function onFormBlank(c,forceRot){busy(true,'Hazır optik form inceleniyor�
   await IDB.put('tpl',await new Promise(res=>t.up.toBlob(res,'image/jpeg',0.9)));tplCanvas=t.up;S._src=null;
   S.tpl=tpl;S.keys={};S.okb={};S.keyOk=false;KV={};EB='A';formRenumber();persist();stepState();busy(false);
   formEditor();drawGrid();
-  msg('#m1','info',`<b>Hazır optik form</b> algılandı${ocr?'':' (yazılar okunamadı; yönü kontrol edin)'}. Renkli bölümleri ve aşağıdaki listeyi kontrol edin; yanlışsa düzeltip <b>Doğru, devam</b>'a basın.`);
+  {const na=S.tpl.blocks.filter(b=>b.role==='ans').length;msg('#m1','info',`<b>Hazır optik form</b> algılandı${ocr?'':' (yazılar okunamadı; yönü kontrol edin)'}. Bölümler çerçeveyle gösterildi. <b>${na} sınav</b> bulundu; aşağıdaki sekmelerden her sınavın soru sayısını girin, sonra <b>Doğru, devam</b>'a basın.`);}FTAB=0;
   $('#b1n').style.display='';$('#go2').textContent='✓ Doğru, devam →';}
-let FORM_SRC=null;
+let FORM_SRC=null,FTAB=0;
 function formEditor(){const box=$('#formEd');if(!S.tpl||S.tpl.kind!=='grid'){box.style.display='none';return;}box.style.display='';
-  const T=S.tpl;const L=T.blocks.map((b,i)=>({b,i})).filter(o=>o.b.role!=='skip'||((o.b.rows===1||o.b.cols===1)&&o.b.rows*o.b.cols>=2)||o.b.rows*o.b.cols>=8);
-  box.innerHTML='<div class="hint" style="margin:6px 0">Bulunan bölümler (renkler resimdekiyle aynı):</div>'+L.map(({b,i})=>`<div class="fe" data-i="${i}"><i style="background:${RCOL[b.role]}"></i><span class="dim">${b.rows}×${b.cols}</span>
-    <select>${Object.keys(ROLE).map(k=>`<option value="${k}" ${k===b.role?'selected':''}>${ROLE[k]}</option>`).join('')}</select>
-    ${b.role==='ans'?`<input type="text" value="${esc(b.name||'')}" placeholder="Bölüm adı"><span class="dim">${b.q0}–${b.q1}</span>`:''}</div>`).join('')+
-    `<div class="btns"><button class="btn sec" id="feRot">↻ Formu ters çevir (180°)</button></div>`;
-  box.querySelectorAll('.fe').forEach(d=>{const b=T.blocks[+d.dataset.i];d.querySelector('select').onchange=e=>{const v=e.target.value;if(v!=='skip'&&v!=='ans')T.blocks.forEach(o=>{if(o!==b&&o.role===v)o.role='skip';});b.role=v;if(v==='name'&&!b.alpha)b.alpha=b.rows===29?GRID.TRALPHA:'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.slice(0,b.rows);formRenumber();persist();formEditor();drawGrid();};
-    const inp=d.querySelector('input');if(inp)inp.onchange=()=>{b.name=inp.value.trim()||b.name;formRenumber();persist();drawGrid();};});
+  const T=S.tpl;const ans=T.blocks.filter(b=>b.role==='ans').sort((a,b)=>a.q0-b.q0);if(FTAB>=ans.length)FTAB=0;
+  const others=['no','tc','name','book'].map(r=>T.blocks.find(b=>b.role===r)).filter(Boolean);
+  let h=`<div class="fsum">Bu formda <b>${ans.length} sınav</b> var${ans.length?': '+ans.map(b=>esc(b.name)).join(', '):''}.`+(others.length?`<br>Ayrıca: ${others.map(b=>ROLE[b.role]).join(', ')}.`:'')+`</div>`;
+  if(ans.length){h+=`<div class="ftabs">${ans.map((b,k)=>`<button class="btn ${k===FTAB?'acc':'sec'}" data-k="${k}">${esc(b.name.length>16?b.name.slice(0,15)+'…':b.name)}<small>${b.use} soru</small></button>`).join('')}</div>`;
+    const b=ans[FTAB];h+=`<div class="fpanel"><label class="f">Sınavın adı</label><input type="text" id="feName" value="${esc(b.name)}">
+      <label class="f">Bu sınavda kaç soru var? <span class="dim">(formda en çok ${b.rows})</span></label>
+      <div class="row" style="align-items:center"><button class="btn sec" id="feM" style="flex:0 0 52px">−</button><input type="number" id="feN" min="1" max="${b.rows}" value="${b.use}" inputmode="numeric" style="text-align:center;font-size:20px;font-weight:700"><button class="btn sec" id="feP" style="flex:0 0 52px">+</button></div>
+      <div class="hint">Soldaki 1–${b.use} numaralı satırların balonları okunacak (resimde yeşil). Puan bu sınav için 100 üzerinden ayrı hesaplanır.</div></div>`;}
+  const L=T.blocks.map((b,i)=>({b,i})).filter(o=>o.b.role!=='skip'||((o.b.rows===1||o.b.cols===1)&&o.b.rows*o.b.cols>=2)||o.b.rows*o.b.cols>=8);
+  h+=`<details class="fdet"><summary>Bölüm yanlış tanındıysa düzelt</summary>`+L.map(({b,i})=>`<div class="fe" data-i="${i}"><i style="background:${RCOL[b.role]}"></i><span class="dim">${b.rows}×${b.cols}</span>
+    <select>${Object.keys(ROLE).map(k=>`<option value="${k}" ${k===b.role?'selected':''}>${ROLE[k]}</option>`).join('')}</select></div>`).join('')+
+    `<div class="btns"><button class="btn sec" id="feRot">↻ Formu ters çevir (180°)</button></div></details>`;
+  box.innerHTML=h;
+  box.querySelectorAll('.ftabs button').forEach(x=>x.onclick=()=>{FTAB=+x.dataset.k;formEditor();drawGrid();});
+  if(ans.length){const b=ans[FTAB];const setN=v=>{b.use=Math.max(1,Math.min(b.rows,v|0||b.rows));formRenumber();persist();formEditor();drawGrid();};
+    $('#feN').onchange=()=>setN(+$('#feN').value);$('#feM').onclick=()=>setN(b.use-1);$('#feP').onclick=()=>setN(b.use+1);
+    $('#feName').onchange=()=>{b.name=$('#feName').value.trim()||b.name;formRenumber();persist();formEditor();drawGrid();};}
+  box.querySelectorAll('.fe').forEach(d=>{const b=T.blocks[+d.dataset.i];d.querySelector('select').onchange=e=>{const v=e.target.value;if(v!=='skip'&&v!=='ans')T.blocks.forEach(o=>{if(o!==b&&o.role===v)o.role='skip';});b.role=v;if(v==='name'&&!b.alpha)b.alpha=b.rows===29?GRID.TRALPHA:'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.slice(0,b.rows);formRenumber();persist();formEditor();drawGrid();};});
   $('#feRot').onclick=async()=>{if(!FORM_SRC){toast('Boş formu yeniden çekin');return;}await onFormBlank(FORM_SRC,(S.tpl.rot+180)%360);};}
 async function onBlank(f){busy(true,'Boş kâğıt inceleniyor…');await sleep(30);
   try{const c=await loadFile(f,1600);let r=BUB.read(c,{n:S.cfg.n,opts:S.cfg.opts});
@@ -908,10 +927,18 @@ async function onBlank(f){busy(true,'Boş kâğıt inceleniyor…');await sleep(
     busy(false);FREE.loadCV().catch(()=>{});}
   catch(e){busy(false);msg('#m1','bad','Hata: '+esc(e.message));}}
 function drawGrid(){if(!S.tpl||!tplCanvas)return;const cv=$('#c1');const x=prepView(cv);x.drawImage(tplCanvas,0,0);
-  if(S.tpl.kind==='grid'){const T=S.tpl,R=T.sp*0.42;x.lineWidth=Math.max(2,T.sp/9);
-    T.blocks.forEach(b=>{if(b.role==='skip'&&b.rows*b.cols<4)return;x.strokeStyle=RCOL[b.role];b.P.forEach(row=>row.forEach(([px,py])=>{x.beginPath();x.arc(px,py,R,0,7);x.stroke();}));
-      if(b.role==='skip')return;const bw=b.box[2]-b.box[0]+T.sp;let t=b.role==='ans'?`${b.q0}-${b.q1} ${b.name}`:ROLE[b.role];const fs=Math.round(T.sp*0.75);x.font=`bold ${fs}px system-ui`;while(t.length>4&&x.measureText(t).width>Math.max(bw,T.sp*5))t=t.slice(0,-2)+'…';const w=x.measureText(t).width;
-      x.fillStyle='rgba(255,255,255,.92)';x.fillRect(b.box[0]-4,b.box[1]-T.sp*1.9,w+8,fs*1.3);x.fillStyle=RCOL[b.role];x.textBaseline='top';x.fillText(t,b.box[0],b.box[1]-T.sp*1.85);});
+  if(S.tpl.kind==='grid'){const T=S.tpl,sp=T.sp,R=sp*0.42;const ans=T.blocks.filter(b=>b.role==='ans').sort((a,b)=>a.q0-b.q0);
+    const rr=(x0,y0,w,h,r)=>{x.beginPath();x.moveTo(x0+r,y0);x.arcTo(x0+w,y0,x0+w,y0+h,r);x.arcTo(x0+w,y0+h,x0,y0+h,r);x.arcTo(x0,y0+h,x0,y0,r);x.arcTo(x0,y0,x0+w,y0,r);x.closePath();};
+    T.blocks.forEach(b=>{if(b.role==='skip')return;const col=RCOL[b.role];const act=b.role!=='ans'||ans.indexOf(b)===FTAB;
+      // balonlar
+      b.P.forEach((row,r)=>row.forEach(([px,py])=>{const on=b.role!=='ans'||r<b.use;x.lineWidth=on?Math.max(2,sp/9):1;x.strokeStyle=on?col:'rgba(120,120,120,.35)';x.beginPath();x.arc(px,py,R,0,7);x.stroke();}));
+      // çerçeve
+      const padL=b.role==='ans'?sp*1.45:sp*0.9,padR=b.role==='ans'?sp*0.6:sp*0.9;const x0=b.box[0]-padL,y0=b.box[1]-sp*1.0,w=b.box[2]-b.box[0]+padL+padR,h=b.box[3]-b.box[1]+sp*1.9;
+      x.lineWidth=act?Math.max(4,sp/4):Math.max(3,sp/6);x.strokeStyle=col;rr(x0,y0,w,h,sp*0.5);x.stroke();
+      if(b.role==='ans'&&b.use<b.rows){const yy=(b.P[b.use-1][0][1]+b.P[b.use][0][1])/2;x.setLineDash([sp*0.5,sp*0.35]);x.beginPath();x.moveTo(x0,yy);x.lineTo(x0+w,yy);x.stroke();x.setLineDash([]);}
+      // başlık etiketi
+      let t=b.role==='ans'?`${b.name} · ${b.use} soru`:ROLE[b.role];const fs=Math.round(sp*0.8);x.font=`bold ${fs}px system-ui`;const maxW=b.role==='ans'?w:Math.max(w,sp*6);while(t.length>4&&x.measureText(t).width>maxW-8)t=t.slice(0,-2)+'…';const tw=x.measureText(t).width;
+      x.fillStyle=col;rr(x0,y0-fs*1.45,tw+12,fs*1.4,sp*0.3);x.fill();x.fillStyle='#fff';x.textBaseline='middle';x.fillText(t,x0+6,y0-fs*0.75);});
     $('#w1').style.display='';return;}
   const R=S.tpl.R||10;x.lineWidth=Math.max(2,R/5);x.font=`bold ${Math.round(R*1.3)}px system-ui`;x.textAlign='center';x.textBaseline='middle';
   S.tpl.qs.forEach(q=>{q.pts.forEach(([px,py],i)=>{x.strokeStyle='rgba(31,111,235,.85)';x.beginPath();x.arc(px,py,R*1.25,0,7);x.stroke();});
@@ -949,7 +976,7 @@ async function onKey(f){if(!S.tpl){toast('Önce boş kâğıdı çekin');return;
     const key=[];for(let i=0;i<S.cfg.n;i++){const a=r.answers[i+1]||'';key.push(a==='*'?'':a);}
     setKE(key);unOk();KV[EB]={warp:r.warp,tq:r.tq};persist();stepState();
     const got=key.filter(x=>x).length,multi=Object.keys(r.answers).filter(n=>r.answers[n]==='*'),miss=key.map((v,i)=>v?0:i+1).filter(Boolean);
-    msg('#m2',got===S.cfg.n?'ok':'info',`${got===S.cfg.n?'✓ ':''}Boş kâğıtla <b>${got} fark</b> bulundu (${got}/${S.cfg.n}).`+(miss.length?(miss.length>12?` <b>${miss.length} soru</b> işaretsiz (puanlanmaz); gerekirse ilgili balona dokunarak ekleyin.`:` İşaret bulunamayan: ${miss.join(', ')} — ilgili balona dokunarak ekleyin.`):'')+(multi.length?` Çift işaretli: ${multi.join(', ')}.`:'')+' Kontrol edip <b>Onayla</b>\'ya basın.');
+    msg('#m2',got===S.cfg.n?'ok':'info',`${got===S.cfg.n?'✓ ':''}Boş kâğıtla <b>${got} fark</b> bulundu (${got}/${S.cfg.n}).`+(miss.length?(miss.length>12?` <b>${miss.length} soru</b> işaretsiz (puanlanmaz); gerekirse ilgili balona dokunarak ekleyin.`:` İşaret bulunamayan: ${qList(miss)} — ilgili balona dokunarak ekleyin.`):'')+(multi.length?` Çift işaretli: ${multi.join(', ')}.`:'')+' Kontrol edip <b>Onayla</b>\'ya basın.');
     drawKey();}
   catch(e){busy(false);msg('#m2','bad','Hata: '+esc(e.message));}}
 $('#fKey').onchange=e=>{const f=e.target.files[0];e.target.value='';if(f)onKey(f);};
@@ -979,7 +1006,7 @@ function nearest(P,x,y,onlyQ){let best=null,bd=1e9;P.forEach((pts,qi)=>{if(onlyQ
 document.querySelectorAll('[data-z]').forEach(b=>b.onclick=()=>{z2=b.dataset.z==='+'?Math.min(4,z2*1.5):Math.max(1,z2/1.5);$('#c2').style.width=(z2*100)+'%';});
 $('#keyApply').onclick=()=>{const ch=$('#keyTxt').value.toLocaleUpperCase('tr').replace(/[^A-E\-_.]/g,'').split('');const k=[];for(let i=0;i<S.cfg.n;i++){const c=ch[i];k.push(c&&LET.slice(0,S.cfg.opts).includes(c)?c:'');}setKE(k);unOk();persist();stepState();drawKey();toast('Anahtar güncellendi');};
 $('#keyOk').onclick=()=>{const miss=KE().map((v,i)=>v?0:i+1).filter(Boolean);if(!KE().some(x=>x)){toast('Anahtar boş');return;}
-  if(miss.length&&!confirm(miss.length>12?`${miss.length} sorunun cevabı yok (puanlanmayacak). Yine de onaylansın mı?`:`${miss.join(', ')} numaralı soruların cevabı yok (puanlanmayacak). Yine de onaylansın mı?`))return;
+  if(miss.length&&!confirm(miss.length>12?`${miss.length} sorunun cevabı yok (puanlanmayacak). Yine de onaylansın mı?`:`Cevabı olmayan sorular (puanlanmayacak): ${qList(miss)}. Yine de onaylansın mı?`))return;
   S.okb[EB]=true;const left=BOOKS().filter(b=>!S.okb[b]);
   if(left.length){S.keyOk=false;persist();stepState();toast(`${EB} anahtarı onaylandı ✓ Şimdi ${left[0]} kitapçığının anahtarını `+(keyOf(left[0]).some(v=>v)?'kontrol edip onaylayın':'çekin'));showKeyOf(left[0]);if(!KE().some(v=>v))msg('#m2','info',`<b>${EB} kitapçığının</b> cevap anahtarını çekin.`);window.scrollTo({top:0,behavior:'smooth'});return;}
   S.keyOk=true;persist();stepState();bookTabs();toast(MULTI()?`${BOOKS().join(', ')} anahtarları onaylandı ✓`:'Cevap anahtarı onaylandı ✓');show(3);};
@@ -1126,7 +1153,7 @@ function drawStu(){if(!cur)return;const g=grade(cur.ans,cur.book);const KK=keyOf
     $('#sBook').querySelectorAll('button').forEach(x=>x.onclick=()=>{cur.book=x.dataset.b;drawStu();});}else $('#sBook').style.display='none';$('#sBig').innerHTML='<small>TOPLAM</small>'+fmt(g.score);$('#sDyb').textContent=`${g.D} doğru · ${g.Y} yanlış · ${g.B} boş`;
   $('#sGrp').innerHTML=g.grp.map(x=>`<div><span>${esc(x.name)}</span><b>${fmt(x.pts)}</b><span>/ ${fmt(x.max)} · ${x.D}/${x.G} doğru</span></div>`).join('');$('#sGrp').style.display=g.grp.length?'':'none';
   const multi=cur.ans.map((a,i)=>a==='*'?i+1:0).filter(Boolean);const amb=cur.r.amb||0;
-  $('#sNote').textContent=(multi.length?`Çift işaret: ${multi.join(', ')}. `:'')+(amb?`${amb} belirsiz işaret, kontrol edin.`:'');
+  $('#sNote').textContent=(multi.length?`Çift işaret: ${qList(multi)}. `:'')+(amb?`${amb} belirsiz işaret, kontrol edin.`:'');
   const cv=$('#c3');const x=prepView(cv);cv.style.width=(z3*100)+'%';x.drawImage(cur.r.warp,0,0);
   const R=S.tpl.R||10;x.lineWidth=Math.max(2.5,R/3.5);
   cur.r.tq.forEach((pts,qi)=>{const k=KK[qi],a=cur.ans[qi];const ring=(i,col,fill)=>{const[px,py]=pts[i];x.beginPath();x.arc(px,py,R*1.55,0,7);if(fill){x.fillStyle=fill;x.fill();}x.strokeStyle=col;x.stroke();};
@@ -1159,7 +1186,8 @@ function renderList(){const rs=S.results;const sc=rs.map(r=>r.score);const avg=s
 $('#clearRes').onclick=()=>{if(S.results.length&&confirm('Tüm sonuçlar silinsin mi?')){S.results=[];persist();renderList();stepState();}};
 $('#newExam').onclick=()=>{if(confirm('Yeni sınav: boş kâğıt, anahtar ve sonuçlar silinecek. Emin misiniz?')){const c=S.cfg;S=JSON.parse(JSON.stringify(DEF));S.cfg=c;tplCanvas=null;persist();location.reload();}};
 function download(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},4000);}
-function buildXlsx(){const n=S.cfg.n;const qh=[];for(let i=1;i<=n;i++)qh.push('S'+i);
+function buildXlsx(){const n=S.cfg.n;const qh=[];const QS=S.tpl&&S.tpl.kind==='grid'&&S.tpl.sections&&S.tpl.sections.length>1?S.tpl.qs:null;const ab=s=>s.split(/\s+/).filter(w=>w.length>2||/^[A-ZÇĞİÖŞÜ]/.test(w)).map(w=>w[0].toLocaleUpperCase('tr')).join('').slice(0,4);
+  for(let i=1;i<=n;i++){const q=QS&&QS[i-1];qh.push(q?ab(q.sec)+q.local:'S'+i);}
   S.results.forEach(r=>{const g=grade(r.answers,r.book||'A');r.grp=g.grp;r.D=g.D;r.Y=g.Y;r.B=g.B;r.score=g.score;});const TWO=MULTI();const G0=groups();
   const HASTC=S.results.some(r=>r.tc);const r1=[['Sıra','Ad Soyad','Numara',...(HASTC?['TC Kimlik No']:[]),...(TWO?['Kitapçık']:[]),...G0.map(g=>g.name),'Toplam','Doğru','Yanlış','Boş',...qh]];S.results.forEach((r,i)=>r1.push([i+1,r.name||'',r.no||'',...(HASTC?[r.tc||'']:[]),...(TWO?[r.book||'A']:[]),...r.grp.map(x=>x.pts),r.score,r.D,r.Y,r.B,...r.answers.map(a=>a==='*'?'Çift':a||'')]));
   const rg=[[S.cfg.groupScale==='each'?'Bölüm':'Öğrenme çıktısı','Sorular','Maks. puan','Ortalama puan','Başarı %','En yüksek','En düşük']];
