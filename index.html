@@ -53,7 +53,7 @@ input[type=text],input[type=number],select{width:100%;padding:10px;border:1px so
 </style>
 </head>
 <body>
-<header style="display:flex;align-items:center;gap:8px"><h1 id="hTitle" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Optik Okuyucu</h1><span id="ver" style="font-size:12px;opacity:.85;background:rgba(255,255,255,.15);padding:3px 8px;border-radius:10px;white-space:nowrap">v3.8 · 22.11</span></header>
+<header style="display:flex;align-items:center;gap:8px"><h1 id="hTitle" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Optik Okuyucu</h1><span id="ver" style="font-size:12px;opacity:.85;background:rgba(255,255,255,.15);padding:3px 8px;border-radius:10px;white-space:nowrap">v3.9 · 22.11</span></header>
 <div class="steps">
   <button data-v="1" class="on"><span class="n">1</span>Boş kâğıt</button>
   <button data-v="2"><span class="n">2</span>Anahtar</button>
@@ -153,6 +153,9 @@ input[type=text],input[type=number],select{width:100%;padding:10px;border:1px so
       <div class="row"><div style="flex:2"><label class="f">Ad soyad</label><input type="text" id="sNameTxt"></div><div style="flex:1"><label class="f">Numara</label><input type="text" id="sNoTxt" inputmode="numeric"></div></div>
       <div class="hint" id="hwSt" style="display:none"></div>
       <div class="hint" id="sFields" style="display:none;font-size:14px;color:var(--fg,#222)"></div>
+      <div id="noBox" style="margin:6px 0;font-size:14px"><div id="noWarn" style="display:none;color:#c0392b;font-weight:600;margin-bottom:4px"></div>
+        <label style="display:flex;gap:8px;align-items:center;cursor:pointer"><input type="checkbox" id="noSel" style="width:20px;height:20px"> Numara alanını elle seçeceğim (çerçeve)</label>
+        <div class="row" style="gap:8px;margin-top:4px;align-items:center"><button class="btn sec" id="noDraw" style="display:none">✏ Çerçeve çiz</button><span class="dim" id="noInfo" style="font-size:13px"></span></div></div>
       <div class="hint" style="margin-top:12px">Merak ederseniz okunan kâğıt aşağıda:</div>
       <div class="legend"><span><i style="background:#2a9d5c"></i>doğru</span><span><i style="background:#d62828"></i>yanlış işaret</span><span><i style="border:2px solid #f08c00"></i>doğru cevap</span></div>
       <div class="cvwrap" id="w3"><canvas id="c3"></canvas></div>
@@ -415,8 +418,7 @@ function autoR(tpl){// şık yarıçapı: aynı sorudaki şıklar arası en kıs
   ds.sort((a,b)=>a-b);const med=ds.length?ds[Math.floor(ds.length/2)]:60;
   return Math.max(8,Math.min(med*0.42,Math.max(tpl.W,tpl.H)*0.012));}
 return{loadCV,read,fast,prepare,release,autoR,extractKey,get ready(){return!!cv;},TL};
-})();
-/* ================= BALONLU FORM: ŞABLONSUZ OTOMATİK OKUYUCU =================
+})();/* ================= BALONLU FORM: ŞABLONSUZ OTOMATİK OKUYUCU =================
    Balon ızgarasını bulur; her bloğun üstündeki "A B C D E" başlığından yönü ve şık sırasını belirler. */
 const BUB=(()=>{
 function minGray(cv){const w=cv.width,h=cv.height,d=cv.getContext('2d',{willReadFrequently:true}).getImageData(0,0,w,h).data;const g=new Uint8Array(w*h);
@@ -604,7 +606,6 @@ function read(canvas,cfg){
 }
 return{read};
 })();
-
 /* GRID: şablonsuz balon bloğu bulucu (hazır optik formlar için).
    Tüm balon adaylarını bulur, komşuluğa göre bloklara ayırır, her blokta kafes (u,v) kurar ve eksik balonları tamamlar. */
 const GRID=(()=>{
@@ -871,13 +872,36 @@ function ownFields(canvas,F,sp){useCv();const W=canvas.width,H=canvas.height;con
   try{if(F.no&&F.no.length){const all=[].concat(...F.no);const[ox,oy]=align(all);const cols=F.no.map(col=>col.map(([x,y])=>darkness(M,W,H,x+ox,y+oy,sp)));out.no=decide(cols,0.2).map(o=>o.a>=0?String(o.a):o.a===-2?'?':'').join('');}
     if(F.book&&F.book.length){const[ox,oy]=align(F.book);const row=F.book.map(([x,y])=>darkness(M,W,H,x+ox,y+oy,sp));const idx=row.map((v,i)=>i).sort((a,b)=>row[b]-row[a]);const t=row[idx[0]],s2=row[idx[1]]||0;out.book=(t>=0.3&&t-s2>=0.18)?'ABCDEF'[idx[0]]:(t>=0.3&&s2>=0.3?'?':'');}}
   finally{red.delete();g.delete();}return out;}
-return{detect,setup,read,rotPt,TRALPHA,ownFields};})();
-
+/* öğrenci kâğıdında 0-9 balonlu numara bloğunu bul ve oku (boş form gerekmez). box: [x0,y0,x1,y1] seçilen alan; excl: dışlanacak kutular */
+function digitBlock(canvas,box,excl){useCv();const det=detect(canvas);if(!det.ok)return null;const W=canvas.width,H=canvas.height;
+  const gm=minCh(canvas),G=gm.data;const px=(x,y)=>{x=Math.round(x);y=Math.round(y);return(x<0||y<0||x>=W||y>=H)?255:G[y*W+x];};
+  const ringCol=(NP,sp)=>{let ok=0;NP.forEach(([x,y])=>{let rg=0,gp=0;for(let k=0;k<12;k++){const a=k*Math.PI/6;let m=255;for(const rr of [0.24,0.29,0.34,0.39,0.44])m=Math.min(m,px(x+sp*rr*Math.cos(a),y+sp*rr*Math.sin(a)));rg+=m;}rg/=12;
+      for(const dx of [-0.25,0,0.25])for(const dy of [-0.5,0.5])gp+=px(x+dx*sp,y+dy*sp);gp/=6;if(gp-rg>22)ok++;});return ok>=NP.length*0.7;};
+  const ov=(a,b)=>{const w=Math.min(a[2],b[2])-Math.max(a[0],b[0]),h=Math.min(a[3],b[3])-Math.max(a[1],b[1]);return w>0&&h>0?w*h:0;};
+  const C=[];det.blocks.forEach(bk=>{const g=upGrid(bk,0,W,H);let P=g.P,rows=g.rows,cols=g.cols;
+    // rakam ekseni 10 olmalı (9-11 tolerans); 11 ise üstteki yazı kutusu satırı sayılmış olabilir
+    let mode=null;if(rows>=9&&rows<=11&&cols>=3&&cols<=14)mode='r';else if(cols>=9&&cols<=11&&rows>=3&&rows<=14)mode='c';if(!mode)return;
+    if(mode==='c'){const T=[];for(let c=0;c<cols;c++){T.push(P.map(row=>row[c]));}P=T;const t=rows;rows=cols;cols=t;}// artık satırlar = rakamlar
+    if(rows===11)P=P.slice(1);rows=P.length;
+    // kenar sütunlar kafeste kaybolmuş olabilir (çerçeveye yakın): basılı halka izine bakarak bir sütun öteye uzat
+    for(let it=0;it<3&&cols<12;it++){let grown=false;for(const side of [1,-1]){const ci=side>0?cols-1:0,cj=side>0?cols-2:1;if(cj<0||cj>=cols)continue;
+      const NP=P.map(row=>{const a=row[ci],b=row[cj];return[2*a[0]-b[0],2*a[1]-b[1]];});
+      if(NP.every(([x,y])=>x>det.sp&&y>det.sp&&x<W-det.sp&&y<H-det.sp)&&ringCol(NP,det.sp)){P=P.map((row,r)=>side>0?row.concat([NP[r]]):[NP[r]].concat(row));cols++;grown=true;}}
+      if(!grown)break;}
+    const bb=bbox(P);if(box){const o=ov(bb,box);if(o<(bb[2]-bb[0])*(bb[3]-bb[1])*0.5)return;}
+    if(excl&&excl.some(e=>ov(bb,e)>(bb[2]-bb[0])*(bb[3]-bb[1])*0.3))return;
+    C.push({P,rows,cols,bb,score:(box?0:-Math.abs(cols-10))*10+cols*rows});});
+  gm.delete();
+  if(!C.length)return null;C.sort((a,b)=>b.score-a.score);const B=C[0];
+  const red=redCh(canvas);const M=red.data;let res;
+  try{const colsD=[];for(let c=0;c<B.cols;c++)colsD.push(B.P.map(row=>darkness(M,W,H,row[c][0],row[c][1],det.sp)));
+    const d=decide(colsD,0.2);res=d.map(o=>o.a>=0?String(o.a):o.a===-2?'?':'').join('');}finally{red.delete();}
+  return{no:res,box:B.bb,cols:B.cols,rows:B.rows,ok:B.rows===10};}
+return{detect,setup,read,rotPt,TRALPHA,ownFields,digitBlock};})();
 const IDB={p:null,db(){if(!this.p)this.p=new Promise((res,rej)=>{const r=indexedDB.open('optik',1);r.onupgradeneeded=()=>r.result.createObjectStore('img');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});return this.p;},
   async put(k,v){const db=await this.db();return new Promise((res,rej)=>{const tx=db.transaction('img','readwrite');tx.objectStore('img').put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);});},
   async get(k){const db=await this.db();return new Promise((res,rej)=>{const r=db.transaction('img').objectStore('img').get(k);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});},
   async del(k){const db=await this.db();return new Promise((res)=>{const tx=db.transaction('img','readwrite');tx.objectStore('img').delete(k);tx.oncomplete=()=>res();tx.onerror=()=>res();});}};
-
 const CRC=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0;}return t;})();
 function crc32(b){let c=0xFFFFFFFF;for(let i=0;i<b.length;i++)c=CRC[(c^b[i])&0xFF]^(c>>>8);return(c^0xFFFFFFFF)>>>0;}
 function zip(files){const enc=new TextEncoder();const chunks=[],cen=[];let off=0;
@@ -897,7 +921,6 @@ function sheetXml(rows,widths){let x='<?xml version="1.0" encoding="UTF-8" stand
   x+='<sheetData>';rows.forEach((row,ri)=>{x+=`<row r="${ri+1}">`;row.forEach((v,ci)=>{if(v==null||v==='')return;const ref=colName(ci)+(ri+1);const st=ri===0?' s="1"':'';
     if(typeof v==='number')x+=`<c r="${ref}"${st}><v>${v}</v></c>`;else x+=`<c r="${ref}"${st} t="inlineStr"><is><t xml:space="preserve">${xesc(v)}</t></is></c>`;});x+='</row>';});
   return x+'</sheetData></worksheet>';}
-
 /* EXAM: sınav kâğıdı hazırlama (soru ayrıştırma, optik form çizimi, Word .docx üretimi) */
 const EXAM=(()=>{
 const L5='ABCDE';
@@ -1484,7 +1507,18 @@ async function onStu(f){if(!S.keyOk){toast('Önce cevap anahtarını onaylayın'
 /* ---- toplu okuma: çok sayfalı PDF veya çok sayıda fotoğraf ---- */
 let BATCH=null;
 function ownF(r){if(r&&r.ok&&S.tpl&&S.tpl.fields&&r.warp){try{r.fields=GRID.ownFields(r.warp,S.tpl.fields,S.tpl.R/0.32);}catch(e){console.log('ownF',e);}}return r;}
-async function readCanvas(c){const isG=S.tpl.kind==='grid';const tc=await getTplCanvas();return isG?GRID.read(c,S.tpl,{wantWarp:true}):ownF(FREE.read(c,[{tpl:tplObj(),canvas:tc}],{wantWarp:true,wantName:true}));}
+async function readCanvas(c){const isG=S.tpl.kind==='grid';const tc=await getTplCanvas();return postRead(isG?GRID.read(c,S.tpl,{wantWarp:true}):ownF(FREE.read(c,[{tpl:tplObj(),canvas:tc}],{wantWarp:true,wantName:true})));}
+/* öğrenci numarası: şablonda okunmadıysa kâğıttaki 0-9 balon bloğunu ara; elle çizilen çerçeve varsa yalnız orada ara */
+const noOk=v=>!!v&&/^\d{4,}$/.test(v);
+function noExcl(r){const E=[];const R=S.tpl.R||10;if(r.tq&&r.tq.length){let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;r.tq.forEach(q=>q&&q.forEach(([x,y])=>{x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y);}));if(x1>x0)E.push([x0-R,y0-R,x1+R,y1+R]);}
+  if(S.tpl.kind==='grid'&&S.tpl.blocks)S.tpl.blocks.forEach(b=>{if(['ans','tc','name'].includes(b.role)&&b.box)E.push(b.box);});return E;}
+function postRead(r){if(!r||!r.ok||!r.warp||r._post)return r;r._post=true;const had=!!r.fields;const F=r.fields||{};
+  try{if(S.tpl.noOn&&S.tpl.noBox){const d=GRID.digitBlock(r.warp,S.tpl.noBox);F.no=d&&d.no||'';r.noSrc='frame';}
+    else{const nb=S.tpl.kind==='grid'&&S.tpl.blocks&&S.tpl.blocks.find(b=>b.role==='no'&&b.box);
+      if(nb){/* şablondaki numara bloğu kenar sütunu kaçırmış olabilir: aynı bölgede yeniden ara, daha uzun okunursa onu al */const e=(S.tpl.sp||20)*1.5;const d=GRID.digitBlock(r.warp,[nb.box[0]-e,nb.box[1]-e,nb.box[2]+e,nb.box[3]+e]);
+        if(d&&noOk(d.no)&&d.no.length>(F.no||'').length&&(!F.no||d.no.includes(F.no.replace(/\?/g,''))||!noOk(F.no))){F.no=d.no;r.noSrc='block';}}
+      if(!noOk(F.no)){const d=GRID.digitBlock(r.warp,null,noExcl(r));if(d&&noOk(d.no)){F.no=d.no;r.noSrc='auto';}}}}catch(e){console.log('postRead',e);}
+  if(had||F.no)r.fields=F;r.hadFields=had;r.noMissing=!noOk(F.no);return r;}
 async function onBatch(files){if(!S.keyOk){toast('Önce cevap anahtarını onaylayın');return;}if(CAM.on)camStop();
   try{await cvReady();const isG=S.tpl.kind==='grid',MX=isG?2200:2400;const items=[];busy(true,'Dosyalar hazırlanıyor…');
     for(const f of files){if(isPdf(f)){const d=await openPdf(f);for(let i=1;i<=d.numPages;i++)items.push({doc:d,i,label:`${f.name} · sayfa ${i}`});}else items.push({f,label:f.name});}
@@ -1495,21 +1529,22 @@ async function onBatch(files){if(!S.keyOk){toast('Önce cevap anahtarını onayl
       if(!r.ok){BATCH.fail.push(it.label);continue;}
       let dbl=0,any=0;for(let i=1;i<=S.cfg.n;i++){if(r.answers[i]==='*')dbl++;if(r.answers[i])any++;}
       if(!any&&!(r.fields&&((r.fields.no||'').replace(/0/g,'')||r.fields.name))){BATCH.blank=(BATCH.blank||0)+1;continue;}
-      if(!r.amb&&!dbl&&!(r.fields&&r.fields.book&&!BOOKS().includes(r.fields.book))){showStu(r,Math.round(performance.now()-t0),true);cur.label=it.label;saveCur(true);BATCH.saved++;}
-      else{r.warp=r.warp;BATCH.review.push({r,ms:Math.round(performance.now()-t0),label:it.label,why:(r.amb?`${r.amb} belirsiz işaret`:'')+(dbl?(r.amb?', ':'')+`${dbl} çift işaret`:'')||'kitapçık anahtarı yok'});}}
+      const noBad=r.noMissing&&(S.tpl.noOn||(S.tpl.fields&&S.tpl.fields.no)||(S.tpl.blocks&&S.tpl.blocks.some(b=>b.role==='no')));
+      if(!r.amb&&!dbl&&!noBad&&!(r.fields&&r.fields.book&&!BOOKS().includes(r.fields.book))){showStu(r,Math.round(performance.now()-t0),true);cur.label=it.label;saveCur(true);BATCH.saved++;}
+      else{r.warp=r.warp;BATCH.review.push({r,ms:Math.round(performance.now()-t0),label:it.label,why:[r.amb?`${r.amb} belirsiz işaret`:'',dbl?`${dbl} çift işaret`:'',noBad?'öğrenci no bulunamadı':''].filter(Boolean).join(', ')||'kitapçık anahtarı yok'});}}
     items.forEach(it=>{if(it.doc){try{it.doc.destroy();}catch(e){}}});busy(false);renderList();
     msg('#m3','ok',`📄 <b>${BATCH.total}</b> sayfa okundu: <b>${BATCH.saved}</b> kâğıt otomatik kaydedildi`+(BATCH.review.length?`, <b>${BATCH.review.length}</b> kâğıt kontrolünüzü bekliyor (aşağıda sırayla gelecek)`:'')+(BATCH.blank?`, ${BATCH.blank} boş sayfa atlandı`:'')+(BATCH.fail.length?`. <b>Okunamayan ${BATCH.fail.length} sayfa:</b> ${BATCH.fail.map(esc).join(', ')}`:'')+'.');
     batchNext();}
   catch(e){busy(false);msg('#m3','bad','Hata: '+esc(e.message));}}
 function batchNext(){if(!BATCH)return;const it=BATCH.review.shift();if(!it){if(BATCH.total){$('#stuBox').style.display='none';toast('Toplu okuma bitti ✓');}BATCH=null;$('#batchSt').style.display='none';return;}
   showStu(it.r,it.ms);cur.label=it.label;$('#batchSt').style.display='';$('#batchSt').innerHTML=`🔎 Kontrol: <b>${esc(it.label)}</b> — ${esc(it.why)}. Gerekirse balonlara dokunup düzeltin. <span class="dim">(kalan ${BATCH.review.length})</span>`;}
-function showStu(r,ms,silent){const ans=[];for(let i=0;i<S.cfg.n;i++)ans.push(r.answers[i+1]||'');
+function showStu(r,ms,silent){postRead(r);const ans=[];for(let i=0;i<S.cfg.n;i++)ans.push(r.answers[i+1]||'');
   let book=BOOKS()[0];const F=r.fields||{};
   if(F.book&&BOOKS().includes(F.book))book=F.book;else if(MULTI()){let bd=-1;BOOKS().forEach(b=>{const d=grade(ans,b).D;if(d>bd){bd=d;book=b;}});}
   cur={r,ans,auto:ans.slice(),name:r.nameCrop,ms,book,autoBook:book,fields:F};if(!BATCH)msg('#m3','','');
-  $('#sNameTxt').value=F.name||'';$('#sNoTxt').value=F.no||'';$('#sNameTxt').dataset.u='';$('#sNoTxt').dataset.u='';
+  $('#sNameTxt').value=F.name||'';$('#sNoTxt').value=F.no||'';$('#sNameTxt').dataset.u='';$('#sNoTxt').dataset.u='';$('#sNoTxt').dataset.b=noOk(F.no)?'1':'';
   $('#sFields').style.display=r.fields?'':'none';if(r.fields)$('#sFields').innerHTML=[F.no!=null?`Öğrenci No: <b>${esc(F.no||'—')}</b>`:'',F.tc!=null?`TC: <b>${esc(F.tc||'—')}</b>`:'',F.book!=null?`Kitapçık (kâğıtta): <b>${esc(F.book||'işaretsiz')}</b>`:''].filter(Boolean).join(' · ')+(F.book&&!BOOKS().includes(F.book)?`<br><span style="color:#c0392b">⚠ Öğrenci <b>${esc(F.book)}</b> kitapçığını işaretlemiş ama ${esc(F.book)} anahtarı yok; ${esc(book)} anahtarıyla puanlandı. 2. adımda “+ Kitapçık ekle” ile ekleyebilirsiniz.</span>`:'');
-  if(!r.fields)hwRun(cur);else hwSt('');if(cur.name){$('#sName').src=cur.name.toDataURL('image/jpeg',0.8);$('#sName').style.display='';}else $('#sName').style.display='none';
+  if(!r.hadFields)hwRun(cur);else hwSt('');noUI();if(cur.name){$('#sName').src=cur.name.toDataURL('image/jpeg',0.8);$('#sName').style.display='';}else $('#sName').style.display='none';
   drawStu();$('#stuBox').style.display='';if(!silent)$('#stuBox').scrollIntoView({behavior:'smooth',block:'start'});}
 /* ---- el yazısı: boş kâğıttaki basılı yazı/çizgileri çıkar, yalnız öğrencinin mürekkebini bırak ---- */
 function handInk(warp){if(!S.tpl.nameBox||!tplCanvas||!warp)return null;const[bx,by,bw,bh]=S.tpl.nameBox.map(Math.round);
@@ -1589,7 +1624,7 @@ async function hwRun(c){const tok=++HWTOK;if(!S.cfg.hw||!c||!c.r||!c.r.warp){hwS
     const segs=hwSegments(line);if(!segs.length){hwSt('✍ Kâğıtta el yazısı bulunamadı.');return;}
     hwSt('✍ İsim ve numara okunuyor…');const pipe=await hwLoad();if(tok!==HWTOK)return;hwSt('✍ İsim ve numara okunuyor…');
     const words=[];for(let i=0;i<segs.length;i++){const o=await pipe(segs[i].toDataURL('image/png'),{max_new_tokens:16});if(tok!==HWTOK)return;words.push((o&&o[0]&&o[0].generated_text)||'');
-      const p=hwParse(words);if(p.name&&!$('#sNameTxt').dataset.u)$('#sNameTxt').value=p.name;if(p.no&&!$('#sNoTxt').dataset.u)$('#sNoTxt').value=p.no;}
+      const p=hwParse(words);if(p.name&&!$('#sNameTxt').dataset.u)$('#sNameTxt').value=p.name;if(p.no&&!$('#sNoTxt').dataset.u&&!$('#sNoTxt').dataset.b)$('#sNoTxt').value=p.no;}
     const p=hwParse(words);c.hw={name:p.name,no:p.no,raw:words.join(' | ')};
     hwSt(p.name||p.no?'✍ El yazısından okundu, yanlışsa düzeltin.':'✍ Okunamadı, elle yazabilirsiniz.');console.log('hw',words);}
   catch(e){if(tok===HWTOK)hwSt('✍ El yazısı okunamadı: '+(e.message||e));console.log('hw',e);}}
@@ -1637,10 +1672,29 @@ function drawStu(){if(!cur)return;const g=grade(cur.ans,cur.book);const KK=keyOf
   cur.r.tq.forEach((pts,qi)=>{const k=KK[qi],a=cur.ans[qi];const ring=(i,col,fill)=>{const[px,py]=pts[i];x.beginPath();x.arc(px,py,R*1.55,0,7);if(fill){x.fillStyle=fill;x.fill();}x.strokeStyle=col;x.stroke();};
     if(a&&a!=='*'){const i=LET.indexOf(a);if(a===k)ring(i,'#2a9d5c','rgba(42,157,92,.25)');else ring(i,'#d62828','rgba(214,40,40,.2)');}
     if(a==='*'){const f=cur.r.qf&&cur.r.qf[qi]||[];const mx=Math.max(...f);f.forEach((v,i)=>{if(v>=mx*0.6)ring(i,'#d62828','rgba(214,40,40,.2)');});}
-    if(k&&a!==k){x.setLineDash([7,5]);ring(LET.indexOf(k),'#f08c00');x.setLineDash([]);}});}
+    if(k&&a!==k){x.setLineDash([7,5]);ring(LET.indexOf(k),'#f08c00');x.setLineDash([]);}});
+  const fb=NOSEL.drag||(S.tpl.noOn&&S.tpl.noBox);if(fb){const[a0,b0,a1,b1]=fb;x.save();x.lineWidth=Math.max(3,R/2.5);x.setLineDash([R*1.2,R*0.8]);x.strokeStyle=NOSEL.drag?'#f08c00':'#1d6fd8';x.fillStyle='rgba(29,111,216,.08)';
+    x.fillRect(Math.min(a0,a1),Math.min(b0,b1),Math.abs(a1-a0),Math.abs(b1-b0));x.strokeRect(Math.min(a0,a1),Math.min(b0,b1),Math.abs(a1-a0),Math.abs(b1-b0));x.restore();}}
+/* ---- öğrenci no çerçevesi: elle çiz / aç-kapa ---- */
+const NOSEL={on:false,drag:null};
+function noUI(){if(!cur)return;const F=cur.fields||{};const miss=!noOk($('#sNoTxt').value.trim());
+  $('#noWarn').style.display=miss?'':'none';$('#noWarn').innerHTML=S.tpl.noOn&&S.tpl.noBox?'⚠ Çerçevede öğrenci numarası okunamadı. Çerçeveyi yeniden çizin veya numarayı elle yazın.':'⚠ Öğrenci numarası bulunamadı.';
+  $('#noSel').checked=!!S.tpl.noOn;$('#noDraw').style.display=S.tpl.noOn?'':'none';$('#noDraw').textContent=NOSEL.on?'✋ Çizimi iptal et':(S.tpl.noBox?'✏ Çerçeveyi yeniden çiz':'✏ Çerçeve çiz');
+  $('#noInfo').innerHTML=NOSEL.on?'Kâğıt görüntüsünde numara balonlarının <b>çevresine parmağınızla sürükleyerek</b> çerçeve çizin.':(S.tpl.noOn&&S.tpl.noBox?'Çerçeve açık: numara her kâğıtta bu alandan okunur.':'');
+  $('#c3').style.touchAction=NOSEL.on?'none':'';}
+function noApply(){if(!cur||!cur.r.warp)return;let d=null;try{d=S.tpl.noOn&&S.tpl.noBox?GRID.digitBlock(cur.r.warp,S.tpl.noBox):GRID.digitBlock(cur.r.warp,null,noExcl(cur.r));}catch(e){console.log(e);}
+  const no=d&&d.no||'';cur.fields=cur.fields||{};cur.fields.no=no;cur.r.fields=cur.fields;cur.r.noMissing=!noOk(no);
+  if(noOk(no)&&!$('#sNoTxt').dataset.u){$('#sNoTxt').value=no;$('#sNoTxt').dataset.b='1';}
+  if(S.tpl.noOn&&S.tpl.noBox)toast(noOk(no)?`Numara okundu: ${no}`:'Çerçevede numara balonu bulunamadı, alanı biraz daha geniş çizin');noUI();drawStu();}
+$('#noSel').onchange=()=>{S.tpl.noOn=$('#noSel').checked;NOSEL.on=S.tpl.noOn&&!S.tpl.noBox;NOSEL.drag=null;persist();noUI();if(!NOSEL.on)noApply();else drawStu();};
+$('#noDraw').onclick=()=>{NOSEL.on=!NOSEL.on;NOSEL.drag=null;noUI();drawStu();if(NOSEL.on)$('#c3').scrollIntoView({behavior:'smooth',block:'center'});};
 (()=>{const cv=$('#c3');let down=null;
-  cv.addEventListener('pointerdown',e=>{down=cvXY(cv,e);});
-  cv.addEventListener('pointerup',e=>{if(!cur||!down)return;const[x,y]=cvXY(cv,e);if(Math.hypot(x-down[0],y-down[1])>(S.tpl.R||10))return;down=null;
+  cv.addEventListener('pointerdown',e=>{down=cvXY(cv,e);if(NOSEL.on&&cur){e.preventDefault();try{cv.setPointerCapture(e.pointerId);}catch(_){}NOSEL.drag=[down[0],down[1],down[0],down[1]];}});
+  cv.addEventListener('pointermove',e=>{if(!NOSEL.on||!NOSEL.drag)return;e.preventDefault();const[x,y]=cvXY(cv,e);NOSEL.drag[2]=x;NOSEL.drag[3]=y;drawStu();});
+  cv.addEventListener('pointerup',e=>{if(NOSEL.on&&NOSEL.drag&&cur){const[x,y]=cvXY(cv,e);const[a,b]=NOSEL.drag;NOSEL.drag=null;down=null;
+      const bx=[Math.min(a,x),Math.min(b,y),Math.max(a,x),Math.max(b,y)];const R=S.tpl.R||10;if(bx[2]-bx[0]<R*4||bx[3]-bx[1]<R*4){toast('Çerçeve çok küçük, numara alanının çevresine sürükleyin');drawStu();return;}
+      S.tpl.noBox=bx;S.tpl.noOn=true;NOSEL.on=false;persist();noApply();return;}
+    if(!cur||!down)return;const[x,y]=cvXY(cv,e);if(Math.hypot(x-down[0],y-down[1])>(S.tpl.R||10))return;down=null;
     const nb=nearest(cur.r.tq,x,y);if(!nb||nb.d>(S.tpl.R||10)*2)return;const L=LET[nb.o];cur.ans[nb.q]=cur.ans[nb.q]===L?'':L;drawStu();});})();
 document.querySelectorAll('[data-z3]').forEach(b=>b.onclick=()=>{z3=b.dataset.z3==='+'?Math.min(4,z3*1.5):Math.max(1,z3/1.5);$('#c3').style.width=(z3*100)+'%';});
 function thumb(cv){if(!cv)return null;const t=document.createElement('canvas');const s=Math.min(1,600/cv.width);t.width=Math.round(cv.width*s);t.height=Math.round(cv.height*s);t.getContext('2d').drawImage(cv,0,0,t.width,t.height);return t.toDataURL('image/jpeg',0.6);}
