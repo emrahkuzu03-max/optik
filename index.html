@@ -53,7 +53,7 @@ input[type=text],input[type=number],select{width:100%;padding:10px;border:1px so
 </style>
 </head>
 <body>
-<header style="display:flex;align-items:center;gap:8px"><h1 id="hTitle" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Optik Okuyucu</h1><span id="ver" style="font-size:12px;opacity:.85;background:rgba(255,255,255,.15);padding:3px 8px;border-radius:10px;white-space:nowrap">v3.1 · 22.11</span></header>
+<header style="display:flex;align-items:center;gap:8px"><h1 id="hTitle" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Optik Okuyucu</h1><span id="ver" style="font-size:12px;opacity:.85;background:rgba(255,255,255,.15);padding:3px 8px;border-radius:10px;white-space:nowrap">v3.2 · 22.11</span></header>
 <div class="steps">
   <button data-v="1" class="on"><span class="n">1</span>Boş kâğıt</button>
   <button data-v="2"><span class="n">2</span>Anahtar</button>
@@ -885,8 +885,36 @@ async function onFormBlank(c,forceRot){busy(true,'Hazır optik form inceleniyor�
   formEditor();drawGrid();
   {const na=S.tpl.blocks.filter(b=>b.role==='ans').length;msg('#m1','info',`<b>Hazır optik form</b> algılandı${ocr?'':' (yazılar okunamadı; yönü kontrol edin)'}. Bölümler çerçeveyle gösterildi. <b>${na} sınav</b> bulundu; aşağıdaki sekmelerden her sınavın soru sayısını girin, sonra <b>Doğru, devam</b>'a basın.`);}FTAB=0;
   $('#b1n').style.display='';$('#go2').textContent='✓ Doğru, devam →';}
+/* kendi kâğıdı: başlıktan sınav adını oku */
+async function ownTitle(cc){const T=S.tpl;if(!T||T.kind!=='own'||!T.nameBox)return;try{const ocr=await getOcr();if(!ocr||S.tpl!==T)return;
+    const[x,y,w,h]=T.nameBox.map(Math.round);let c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(cc,x,y,w,h,0,0,w,h);
+    const rot=((T.nameRot||0)%360+360)%360;if(rot){const c2=document.createElement('canvas');const sw=rot===180;c2.width=sw?w:h;c2.height=sw?h:w;const x2=c2.getContext('2d');x2.translate(c2.width/2,c2.height/2);x2.rotate(-rot*Math.PI/180);x2.drawImage(c,-w/2,-h/2);c=c2;}
+    const ws=await ocr(c);if(TESS){try{await TESS.terminate();}catch(e){}TESS=null;}
+    const lines={};ws.filter(o=>o.conf>40).forEach(o=>{const k=Math.round((o.bbox.y0+o.bbox.y1)/2/(c.height/12));(lines[k]=lines[k]||[]).push(o);});
+    const L=Object.values(lines).map(a=>a.sort((p,q)=>p.bbox.x0-q.bbox.x0).map(o=>o.text).join(' '));
+    const clean=s=>s.replace(/(DERSİ|DERSI)?\s*(SINAVI|SINAV)\b.*$/i,'').replace(/(DERSİ|DERSI)\s*$/i,'').replace(/[^A-Za-zÇĞİÖŞÜçğıöşü0-9 ]/g,' ').replace(/\s+/g,' ').trim();
+    const si=L.findIndex(s=>/SINAV/.test(s.toLocaleUpperCase('tr')));let t=si>=0?clean(L[si]):'';if(t.length<3&&si>0&&!/ÜNİVERSİTE|YÜKSEKOKUL|FAKÜLTE|LİSE|OKULU/.test(L[si-1].toLocaleUpperCase('tr')))t=clean(L[si-1]);
+    if(t.length>=3&&S.tpl===T&&(T.exam.name==='Sınav'||!T.exam.name)){T.exam.name=t.toLocaleLowerCase('tr').replace(/(^|\s)\S/g,s=>s.toLocaleUpperCase('tr'));if(!S.cfg.title||S.cfg.title==='Sınav'){S.cfg.title=T.exam.name;$('#cTitle').value=S.cfg.title;}persist();stepState();formEditor();drawGrid();}}
+  catch(e){console.log('title',e);}}
+async function setOwnCount(k){const T=S.tpl;k=Math.max(1,Math.min(200,k|0));if(k===S.cfg.n)return;busy(true,'Balonlar yeniden belirleniyor…');await sleep(20);
+  try{const r=BUB.read(tplCanvas,{n:k,opts:S.cfg.opts});busy(false);if(!r.ok){toast(`Bu kâğıtta ${k} soru bulunamadı`);formEditor();return;}
+    T.qs=r.qpts.map((pts,i)=>({n:i+1,pts:pts.map(p=>[p[0],p[1]]),bubble:true,done:true}));T.ver=Date.now();S.cfg.n=k;$('#cN').value=k;S.keys={};S.okb={};S.keyOk=false;KV={};persist();stepState();formEditor();drawGrid();}
+  catch(e){busy(false);toast('Hata: '+e.message);}}
+function ownCols(){// soruları görünümde sütunlara ayır
+  const T=S.tpl,R=T.R||10;const qs=T.qs.map(q=>({q,v:q.pts.map(([x,y])=>toView(x,y))}));qs.sort((a,b)=>a.v[0][0]-b.v[0][0]);const cols=[];
+  qs.forEach(o=>{const c=cols.find(c=>Math.abs(c.x-o.v[0][0])<R*6);if(c){c.items.push(o);}else cols.push({x:o.v[0][0],items:[o]});});
+  return cols.map(c=>{let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;c.items.forEach(o=>o.v.forEach(([x,y])=>{x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y);}));const ns=c.items.map(o=>o.q.n);return{box:[x0,y0,x1,y1],a:Math.min(...ns),b:Math.max(...ns)};}).sort((a,b)=>a.a-b.a);}
 let FORM_SRC=null,FTAB=0;
-function formEditor(){const box=$('#formEd');if(!S.tpl||S.tpl.kind!=='grid'){box.style.display='none';return;}box.style.display='';
+function formEditor(){const box=$('#formEd');if(!S.tpl){box.style.display='none';return;}box.style.display='';
+  if(S.tpl.kind!=='grid'){const T=S.tpl;if(!T.exam)T.exam={name:S.cfg.title||'Sınav'};
+    box.innerHTML=`<div class="fsum">Bu kâğıtta <b>1 sınav</b> var: ${esc(T.exam.name)}.`+(T.nameBox?`<br>Ayrıca: Ad Soyad / Numara (el yazısı alanı).`:'')+`</div>
+      <div class="ftabs"><button class="btn acc">${esc(T.exam.name.length>18?T.exam.name.slice(0,17)+'…':T.exam.name)}<small>${S.cfg.n} soru</small></button></div>
+      <div class="fpanel"><label class="f">Sınavın adı</label><input type="text" id="feName" value="${esc(T.exam.name)}">
+      <label class="f">Bu sınavda kaç soru var?</label>
+      <div class="row" style="align-items:center"><button class="btn sec" id="feM" style="flex:0 0 52px">−</button><input type="number" id="feN" min="1" max="200" value="${S.cfg.n}" inputmode="numeric" style="text-align:center;font-size:20px;font-weight:700"><button class="btn sec" id="feP" style="flex:0 0 52px">+</button></div>
+      <div class="hint">Balonlar A B C D E başlıklarına ve soldaki soru numaralarına göre belirlenir (resimde mavi).</div></div>`;
+    $('#feN').onchange=()=>setOwnCount(+$('#feN').value);$('#feM').onclick=()=>setOwnCount(S.cfg.n-1);$('#feP').onclick=()=>setOwnCount(S.cfg.n+1);
+    $('#feName').onchange=()=>{T.exam.name=$('#feName').value.trim()||T.exam.name;S.cfg.title=T.exam.name;$('#cTitle').value=S.cfg.title;persist();stepState();formEditor();drawGrid();};return;}
   const T=S.tpl;const ans=T.blocks.filter(b=>b.role==='ans').sort((a,b)=>a.q0-b.q0);if(FTAB>=ans.length)FTAB=0;
   const others=['no','tc','name','book'].map(r=>T.blocks.find(b=>b.role===r)).filter(Boolean);
   let h=`<div class="fsum">Bu formda <b>${ans.length} sınav</b> var${ans.length?': '+ans.map(b=>esc(b.name)).join(', '):''}.`+(others.length?`<br>Ayrıca: ${others.map(b=>ROLE[b.role]).join(', ')}.`:'')+`</div>`;
@@ -920,10 +948,10 @@ async function onBlank(f){busy(true,'Boş kâğıt inceleniyor…');await sleep(
     const cc=document.createElement('canvas');cc.width=x1-x0;cc.height=y1-y0;cc.getContext('2d').drawImage(c,-x0,-y0);
     const tpl={W:cc.width,H:cc.height,ver:Date.now(),qs:r.qpts.map((pts,i)=>({n:i+1,pts:pts.map(p=>[p[0]-x0,p[1]-y0]),bubble:true,done:true})),nameBox:null,nameRot:0};
     if(r.nameQuad){const nx=r.nameQuad.map(p=>p[0]-x0),ny=r.nameQuad.map(p=>p[1]-y0);const a=Math.max(0,Math.min(...nx)),b=Math.max(0,Math.min(...ny)),a2=Math.min(cc.width,Math.max(...nx)),b2=Math.min(cc.height,Math.max(...ny));if(a2-a>20&&b2-b>10){tpl.nameBox=[a,b,a2-a,b2-b];tpl.nameRot=r.nameRot||0;}}
-    tpl.R=sp*0.32;
+    tpl.R=sp*0.32;tpl.kind='own';tpl.exam={name:S.cfg.title&&S.cfg.title!=='Sınav'?S.cfg.title:'Sınav'};
     await IDB.put('tpl',await new Promise(res=>cc.toBlob(res,'image/jpeg',0.92)));
     tplCanvas=cc;S.tpl=tpl;S.keys={};S.okb={};S.keyOk=false;KV={};EB='A';S.cfg.groupScale='';persist();stepState();formEditor();
-    drawGrid();msg('#m1','ok',`✓ ${S.cfg.n} soru bulundu. Mavi halkalar balonların yerini, numaralar soruları gösteriyor.`);$('#b1n').style.display='';
+    drawGrid();msg('#m1','ok',`✓ Kendi hazırladığınız kâğıt algılandı: <b>1 sınav, ${S.cfg.n} soru</b>. Bölümler çerçeveyle gösterildi; sınavın adını ve soru sayısını aşağıdan kontrol edin.`);ownTitle(cc);$('#b1n').style.display='';
     busy(false);FREE.loadCV().catch(()=>{});}
   catch(e){busy(false);msg('#m1','bad','Hata: '+esc(e.message));}}
 function drawGrid(){if(!S.tpl||!tplCanvas)return;const cv=$('#c1');const x=prepView(cv);x.drawImage(tplCanvas,0,0);
@@ -943,7 +971,15 @@ function drawGrid(){if(!S.tpl||!tplCanvas)return;const cv=$('#c1');const x=prepV
   const R=S.tpl.R||10;x.lineWidth=Math.max(2,R/5);x.font=`bold ${Math.round(R*1.3)}px system-ui`;x.textAlign='center';x.textBaseline='middle';
   S.tpl.qs.forEach(q=>{q.pts.forEach(([px,py],i)=>{x.strokeStyle='rgba(31,111,235,.85)';x.beginPath();x.arc(px,py,R*1.25,0,7);x.stroke();});
     const[a0,b0]=q.pts[0],[a1,b1]=q.pts[1];const[lx,ly]=toView(a0-(a1-a0)*1.15,b0-(b1-b0)*1.15);x.save();x.setTransform(1,0,0,1,0,0);x.fillStyle='rgba(255,255,255,.85)';x.fillRect(lx-R*1.3,ly-R*0.9,R*2.6,R*1.8);x.fillStyle='#1f6feb';x.fillText(String(q.n),lx,ly);x.restore();});
-  if(S.tpl.nameBox){const[a,b,w,h]=S.tpl.nameBox;x.strokeStyle='#2a9d5c';x.setLineDash([8,6]);x.strokeRect(a,b,w,h);x.setLineDash([]);}
+  {const R=S.tpl.R||10,sp=R/0.32;x.save();x.setTransform(1,0,0,1,0,0);
+    const rr=(x0,y0,w,h,r)=>{x.beginPath();x.moveTo(x0+r,y0);x.arcTo(x0+w,y0,x0+w,y0+h,r);x.arcTo(x0+w,y0+h,x0,y0+h,r);x.arcTo(x0,y0+h,x0,y0,r);x.arcTo(x0,y0,x0+w,y0,r);x.closePath();};
+    const tag=(t,x0,y0,col,maxW)=>{const fs=Math.round(sp*0.75);x.font=`bold ${fs}px system-ui`;while(t.length>4&&x.measureText(t).width>maxW-10)t=t.slice(0,-2)+'…';const tw=x.measureText(t).width;x.fillStyle=col;rr(x0,y0-fs*1.45,tw+12,fs*1.4,sp*0.3);x.fill();x.fillStyle='#fff';x.textBaseline='middle';x.textAlign='left';x.fillText(t,x0+6,y0-fs*0.75);};
+    const nm=(S.tpl.exam&&S.tpl.exam.name)||'Sınav';
+    ownCols().forEach((c,i)=>{const[x0,y0,x1,y1]=c.box;const X=x0-sp*1.6,Y=y0-sp*0.9,W=x1-x0+sp*2.4,H=y1-y0+sp*1.8;x.strokeStyle='#2a9d5c';x.lineWidth=Math.max(3,sp/5);rr(X,Y,W,H,sp*0.5);x.stroke();
+      tag(i===0?`${nm} · ${S.cfg.n} soru`:`${c.a}-${c.b}`,X,Y,'#2a9d5c',i===0?W*3:W);});
+    if(S.tpl.nameBox){const[a,b,w,h]=S.tpl.nameBox;const P=[[a,b],[a+w,b],[a+w,b+h],[a,b+h]].map(([px,py])=>toView(px,py));const xs=P.map(p=>p[0]),ys=P.map(p=>p[1]);const X=Math.min(...xs),Y=Math.min(...ys),W=Math.max(...xs)-X,H=Math.max(...ys)-Y;
+      x.strokeStyle='#b5179e';x.lineWidth=Math.max(3,sp/5);rr(X,Y+sp*1.4,W,H-sp*1.4,sp*0.5);x.stroke();tag('Başlık · Ad Soyad · Numara',X,Y+sp*1.4,'#b5179e',W);}
+    x.restore();}
   $('#w1').style.display='';}
 $('#fBlank').onchange=e=>{const f=e.target.files[0];e.target.value='';if(f)onBlank(f);};
 $('#fBlank2').onchange=e=>{const f=e.target.files[0];e.target.value='';if(f)onBlank(f);};
