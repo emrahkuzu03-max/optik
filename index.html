@@ -54,7 +54,7 @@ input[type=text],input[type=number],select{width:100%;padding:10px;border:1px so
 </style>
 </head>
 <body>
-<header style="display:flex;align-items:center;gap:8px"><h1 id="hTitle" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Optik Okuyucu</h1><span id="ver" style="font-size:12px;opacity:.85;background:rgba(255,255,255,.15);padding:3px 8px;border-radius:10px;white-space:nowrap">v1.0 · 25.11.2026</span></header>
+<header style="display:flex;align-items:center;gap:8px"><img id="cbuLogo" src="cbu_logo.png" alt="CBÜ" style="height:34px;width:34px;object-fit:contain;background:#fff;border-radius:50%;padding:2px;flex:0 0 auto" onerror="this.style.display='none'"><h1 id="hTitle" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Optik Okuyucu</h1><span id="ver" style="font-size:12px;opacity:.85;background:rgba(255,255,255,.15);padding:3px 8px;border-radius:10px;white-space:nowrap">v1.0 · 25.11.2026</span></header>
 <div id="pbarW" style="background:#e8f1f3;border-bottom:1px solid #cfe0e4;padding:6px 12px;display:flex;align-items:center;gap:8px;font-size:14px"><div style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📁 <b id="pbP"></b> › 📝 <b id="pbE"></b> <span class="dim" id="pbN" style="font-size:12px"></span></div><button class="btn sec" id="pbBtn" style="padding:5px 10px;flex:0 0 auto;font-size:13px">Proje / sınav ▾</button></div>
 <div class="card" id="pPanel" hidden style="margin:8px 10px"><div class="row" style="align-items:center"><h2 style="flex:1;margin:0">Proje ve sınav seçin</h2><button class="btn sec" id="pClose" style="flex:0 0 auto;padding:4px 10px">✕</button></div>
   <div class="hint">Her sınavın boş kâğıdı, anahtarı, DÖÇ’leri ve sonuçları ayrı saklanır. Bir sınava sonradan okuttuğunuz kâğıtlar öncekilerin üzerine eklenir.</div><div id="pList"></div>
@@ -187,6 +187,9 @@ input[type=text],input[type=number],select{width:100%;padding:10px;border:1px so
   </div>
 </section>
 </main>
+<footer style="text-align:center;font-size:12px;color:#5b6b70;padding:18px 12px 28px;line-height:1.6;border-top:1px solid #e3ecee;margin-top:16px">
+  <img src="cbu_logo.png" alt="" style="height:40px;display:block;margin:0 auto 6px" onerror="this.style.display='none'">
+  <b>Manisa Celal Bayar Üniversitesi<br>Salihli Meslek Yüksekokulu ürünüdür.</b><br>© 2026 Tüm hakları saklıdır. · <span id="ver2">v1.0 · 25.11.2026</span></footer>
 <div class="toast" id="toast"></div>
 <div class="busy" id="busy"><div class="spin"></div><div id="busyTxt">Okunuyor…</div></div>
 <script>
