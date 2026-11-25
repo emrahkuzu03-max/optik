@@ -53,7 +53,7 @@ input[type=text],input[type=number],select{width:100%;padding:10px;border:1px so
 </style>
 </head>
 <body>
-<header style="display:flex;align-items:center;gap:8px"><h1 id="hTitle" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Optik Okuyucu</h1><span id="ver" style="font-size:12px;opacity:.85;background:rgba(255,255,255,.15);padding:3px 8px;border-radius:10px;white-space:nowrap">v4.2 · 25.11</span></header>
+<header style="display:flex;align-items:center;gap:8px"><h1 id="hTitle" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Optik Okuyucu</h1><span id="ver" style="font-size:12px;opacity:.85;background:rgba(255,255,255,.15);padding:3px 8px;border-radius:10px;white-space:nowrap">v4.3 · 25.11</span></header>
 <div class="steps">
   <button data-v="1" class="on"><span class="n">1</span>Boş kâğıt</button>
   <button data-v="2"><span class="n">2</span>Anahtar</button>
@@ -983,6 +983,9 @@ function parse(text,nOpt){nOpt=nOpt||5;const lines=(text||'').replace(/\r/g,'').
   for(const raw of lines){const line=raw.trim();if(!line){continue;}
     let m=line.match(/^(cevap|doğru cevap|dogru cevap|yanıt|yanit|answer)\s*[:=\-]\s*([A-Ea-e])\b/i);if(m&&q){q.ans=m[2].toUpperCase();continue;}
     m=line.match(/^(DÖÇ|DOC|döç)\s*[:=]?\s*(\d+)\s*$/i);if(m&&q){q.doc='DÖÇ'+m[2];continue;}
+    /* çoklu DÖÇ: "DÖÇ: 1:60, 2:40" veya "DÖÇ: 1, 2" (yüzde yoksa eşit bölünür) */
+    m=line.match(/^(DÖÇ|DOC|döç)\s*[:=]?\s*((?:\d+(?:\s*:\s*\d+(?:[.,]\d+)?\s*%?)?\s*[,;]\s*)+\d+(?:\s*:\s*\d+(?:[.,]\d+)?\s*%?)?|\d+\s*:\s*\d+(?:[.,]\d+)?\s*%?)\s*$/i);
+    if(m&&q){q.docw=m[2].split(/[,;]/).map(p=>{const z=p.trim().match(/^(\d+)(?:\s*:\s*(\d+(?:[.,]\d+)?))?/);return z?{n:'DÖÇ'+z[1],w:z[2]!=null?parseFloat(z[2].replace(',','.')):null}:null;}).filter(Boolean);q.doc=q.docw[0]&&q.docw[0].n;continue;}
     m=line.match(/^(\d{1,3})\s*[\.\)]\s*(.+)$/);
     if(m&&!(q&&q.opts.length===0&&q.text&&false)){q={no:+m[1],text:m[2].trim(),opts:[],ans:'',doc:''};qs.push(q);
       const d=q.text.match(/\[?\(?\s*(DÖÇ|DOC)\s*-?\s*(\d+)\s*\)?\]?/i);if(d){q.doc='DÖÇ'+d[2];q.text=q.text.replace(d[0],'').trim();}
@@ -1207,7 +1210,7 @@ function mkBooks(P,cfg){S.mk=S.mk||{};if(!S.mk.seed){S.mk.seed=(Date.now()%21474
   if(cfg.booklets.length>1)books.B=EXAM.shuffle(O,S.mk.seed,cfg.mixOpts);return books;}
 /* DÖÇ ataması (eski numaraya göre) */
 function mkParse(){const P=EXAM.parse($('#xQs').value,+$('#xOpts').value);const D=(S.mk&&S.mk.docs)||[];
-  P.qs.forEach((q,i)=>{if(q.doc)return;for(const d of D){if(parseRange(d.r,P.qs.length).includes(i+1)){q.doc=d.n;break;}}});return P;}
+  P.qs.forEach((q,i)=>{if(q.doc||q.docw)return;const w=[];for(const d of D){const m=parseRangeW(d.r,P.qs.length);if((i+1) in m)w.push({n:d.n,w:m[i+1]});}if(w.length){q.doc=w[0].n;if(w.length>1||w[0].w!=null)q.docw=w;}});return P;}
 function mkDocs(){const D=(S.mk&&S.mk.docs)||[];$('#xDN').textContent=D.length;const n=EXAM.parse($('#xQs').value,+$('#xOpts').value).qs.length;
   const used={};D.forEach(d=>parseRange(d.r,n).forEach(q=>used[q]=(used[q]||0)+1));const miss=[];for(let q=1;q<=n;q++)if(!used[q])miss.push(q);
   $('#xDocs').innerHTML=D.map((d,j)=>`<div class="docrow"><input class="dname" data-j="${j}" value="${esc(d.n)}"><input class="dq" data-j="${j}" value="${esc(d.r)}" placeholder="örn. 1-8"></div>`).join('')+(D.length&&n?`<div class="hint">${miss.length?`⚠ DÖÇ'e atanmamış sorular: ${miss.slice(0,30).join(', ')}${miss.length>30?' …':''}`:'✓ Tüm sorular bir DÖÇ’e atandı'}</div>`:'');
@@ -1229,7 +1232,7 @@ $('#xOld').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)
   catch(e){busy(false);if(TESS){try{await TESS.terminate();}catch(e2){}TESS=null;}toast('Okunamadı: '+e.message);}};
 function mkSheet(cfg,bk){return EXAM.sheet(cfg.place==='separate'?cfg:{...cfg,uni:'',school:''},bk,1900);}
 let mkT=0;function mkInfo(){clearTimeout(mkT);mkT=setTimeout(()=>{const P=mkParse();const box=$('#xInfo');if(!P.qs.length){box.style.display='none';$('#xPrev').style.display='none';return;}
-    const cfg=mkCfg(P);const docs={};P.qs.forEach(q=>{if(q.doc)docs[q.doc]=(docs[q.doc]||0)+1;});const ka=P.qs.filter(q=>q.ans).length;
+    const cfg=mkCfg(P);const docs={};P.qs.forEach(q=>{(q.docw||(q.doc?[{n:q.doc}]:[])).forEach(d=>{docs[d.n]=(docs[d.n]||0)+1;});});const ka=P.qs.filter(q=>q.ans).length;
     box.style.display='';box.innerHTML=`<b>${P.qs.length} soru</b> bulundu · cevabı belli: <b>${ka}</b>`+(Object.keys(docs).length?` · ${Object.entries(docs).map(([k,v])=>`${esc(k)}: ${v}`).join(', ')}`:'')+(P.warn.length?`<br>⚠ ${P.warn.slice(0,6).map(esc).join('; ')}${P.warn.length>6?' …':''}`:'');
     try{const L=EXAM.fit(cfg,{A:P.qs});box.innerHTML+=L.fits===null?`<br>📄 30 sorudan fazla: 2 sayfa sınırı uygulanmaz.`:L.fits?`<br>📄 Kitapçık başına 2 sayfaya sığar (yazı ${L.fs/2} pt).`:`<br>⚠ Bu kadar uzun sorular 2 sayfaya sığmaz; en küçük yazıyla hazırlanacak.`;}catch(e){}
     try{$('#xPrev').src=mkSheet(cfg,cfg.booklets.length>1?'A':'').toDataURL('image/jpeg',0.8);$('#xPrev').style.display='';}catch(e){}},350);}
@@ -1253,10 +1256,10 @@ $('#xSetup').onclick=async()=>{mkSave();const P=mkParse();if(!P.qs.length){toast
   const tpl={kind:'own',gen:true,W:sh.width,H:sh.height,ver:Date.now(),qs:G.qs.map((pts,i)=>({n:i+1,pts:pts.map(p=>[p[0],p[1]]),bubble:true,done:true})),nameBox:null,nameRot:0,R:G.sp*0.32,exam:{name:cfg.course||'Sınav'},fields:{no:G.no,book:G.book}};
   await IDB.put('tpl',await new Promise(res=>sh.toBlob(res,'image/png')));tplCanvas=sh;S.tpl=tpl;persist();stepState();formEditor();drawGrid();
   msg('#m1','ok',`✓ Optik form uygulamaya kuruldu: <b>${cfg.n} soru</b>${cfg.digits?`, ${cfg.digits} haneli öğrenci no`:''}${G.book?', kitapçık balonu':''}.`);$('#b1n').style.display='';
-  const BK=cfg.booklets.length>1?['A','B']:['A'];S.cfg.books=BK;S.keys={};S.okb={};BK.forEach(b=>{S.keys[b]=books[b].map(q=>q.ans||'');});S.cfg.qtext={};BK.forEach(b=>{S.cfg.qtext[b]=books[b].map(q=>(q.text||'').replace(/\s+/g,' ').trim());});
+  const BK=cfg.booklets.length>1?['A','B']:['A'];S.cfg.books=BK;S.keys={};S.okb={};BK.forEach(b=>{S.keys[b]=books[b].map(q=>q.ans||'');});S.cfg.qtext={};BK.forEach(b=>{S.cfg.qtext[b]=books[b].map(q=>(q.text||'').replace(/\s+/g,' ').trim());});S.cfg.bmap={};BK.slice(1).forEach(b=>{S.cfg.bmap[b]={s0:books[b].map(q=>books.A.findIndex(x=>x.orig===q.orig)+1).join(',')};});
   // DÖÇ
-  const names=[];P.qs.forEach(q=>{if(q.doc&&!names.includes(q.doc))names.push(q.doc);});names.sort((a,b)=>(parseInt(a.replace(/\D/g,''))||0)-(parseInt(b.replace(/\D/g,''))||0));
-  S.cfg.docN={};S.cfg.docQ={};if(names.length){S.cfg.docN.s0=names;BK.forEach(b=>{S.cfg.docQ[b]={s0:names.map(nm=>compress(books[b].map((q,i)=>q.doc===nm?i+1:0).filter(Boolean)))};});}
+  const names=[];P.qs.forEach(q=>{(q.docw||(q.doc?[{n:q.doc}]:[])).forEach(d=>{if(!names.includes(d.n))names.push(d.n);});});names.sort((a,b)=>(parseInt(a.replace(/\D/g,''))||0)-(parseInt(b.replace(/\D/g,''))||0));
+  S.cfg.docN={};S.cfg.docQ={};if(names.length){S.cfg.docN.s0=names;BK.forEach(b=>{S.cfg.docQ[b]={s0:names.map(nm=>fmtRangeW(books[b].map((q,i)=>{const d=(q.docw||(q.doc?[{n:q.doc}]:[])).find(x=>x.n===nm);return d?{q:i+1,w:d.w==null?null:d.w}:null;}).filter(Boolean)))};});}
   S.keyOk=false;BK.slice(1).forEach(b=>S.okb[b]=true);KV={};EB='A';persist();stepState();bookTabs();show(2);if(KE().some(v=>v))drawKey();
   msg('#m2','ok',`✓ Sınav kuruldu: <b>${cfg.n} soru</b>${BK.length>1?', A ve B kitapçığı':''}. Cevap anahtarı Word'deki sorulardan alındı${names.length?', DÖÇ dağılımı da aktarıldı':''}. Kontrol edip <b>Onayla</b>'ya basın; sonra öğrenci kâğıtlarını okutabilirsiniz.`);};
 /* ---- PDF desteği (pdf.js) ---- */
@@ -1517,7 +1520,16 @@ function sections(){const T=S.tpl;if(T&&T.kind==='grid'&&T.sections&&T.sections.
   return[{key:'s0',name:(T&&T.exam&&T.exam.name)||S.cfg.title||'Sınav',q0:1,q1:S.cfg.n}];}
 function docNames(key){S.cfg.docN=S.cfg.docN||{};return S.cfg.docN[key]||[];}
 function docRanges(book,key){const Q=S.cfg.docQ||{};return (Q[book]&&Q[book][key])||(Q.A&&Q.A[key])||[];}
-function parseRange(t,max){const out=[];(t||'').split(/[,\s;]+/).forEach(r=>{const m=r.match(/^(\d+)(?:-(\d+))?$/);if(!m)return;const a=+m[1],b=+(m[2]||m[1]);for(let q=Math.min(a,b);q<=Math.max(a,b);q++)if(q>=1&&q<=max&&!out.includes(q))out.push(q);});return out;}
+/* DÖÇ aralığı ağırlıklı: "1-5, 6:60" → {1:null,…,5:null,6:60} (null = yüzde yazılmamış) */
+function parseRangeW(t,max){const o={};(t||'').split(/[,\s;]+/).forEach(r=>{const m=r.match(/^(\d+)(?:-(\d+))?(?::(\d+(?:[.,]\d+)?)%?)?$/);if(!m)return;const a=+m[1],b=+(m[2]||m[1]);const w=m[3]!=null?parseFloat(m[3].replace(',','.')):null;
+  for(let q=Math.min(a,b);q<=Math.max(a,b);q++)if(q>=1&&q<=max)o[q]=w;});return o;}
+/* bir sınav bölümündeki her sorunun DÖÇ payları: W[j][l] = 0..1. Yüzde yazılmayanlara kalan eşit bölünür; toplam 100'ü aşarsa oranlanır */
+function docWeights(book,key,len){const N=docNames(key);const R=N.map((nm,j)=>parseRangeW(docRanges(book,key)[j],len));const W=N.map(()=>({}));const info={};
+  for(let l=1;l<=len;l++){const js=[];R.forEach((m,j)=>{if(l in m)js.push(j);});if(!js.length)continue;let E=0,U=0;js.forEach(j=>{if(R[j][l]==null)U++;else E+=R[j][l];});
+    let rest=Math.max(0,100-E);const tot=U?E+rest:E;js.forEach(j=>{const w=R[j][l]==null?rest/U:R[j][l];W[j][l]=tot>0?w/(U?Math.max(100,E+rest):tot):1/js.length;});
+    if(js.length>1||E)info[l]={js,ex:E>0,over:E>100||(!U&&E!==100)};}
+  return{W,info};}
+function parseRange(t,max){const out=[];(t||'').split(/[,\s;]+/).forEach(r=>{const m=r.match(/^(\d+)(?:-(\d+))?(?::\d+(?:[.,]\d+)?%?)?$/);if(!m)return;const a=+m[1],b=+(m[2]||m[1]);for(let q=Math.min(a,b);q<=Math.max(a,b);q++)if(q>=1&&q<=max&&!out.includes(q))out.push(q);});return out;}
 function defaultRanges(n,k){const out=[];let s=1;for(let i=0;i<k;i++){const e=Math.round(n*(i+1)/k);out.push(e>=s?(e>s?`${s}-${e}`:`${s}`):'');s=e+1;}return out;}
 function setDocCount(key,k,qn){k=Math.max(0,Math.min(12,k|0));S.cfg.docN=S.cfg.docN||{};S.cfg.docQ=S.cfg.docQ||{};const N=(S.cfg.docN[key]||[]).slice(0,k);while(N.length<k)N.push('DÖÇ'+(N.length+1));S.cfg.docN[key]=N;
   S.cfg.docQ.A=S.cfg.docQ.A||{};const old=S.cfg.docQ.A[key]||[];if(old.length!==k){const d=defaultRanges(qn,k);S.cfg.docQ.A[key]=d.map((v,i)=>old[i]&&old.length===k?old[i]:v);}persist();}
@@ -1527,7 +1539,7 @@ function grade(ans,book){book=book||BOOKS()[0];const KK=keyOf(book);const r2=v=>
   const SEC=sections(),multi=SEC.length>1,grp=[],secs=[];
   SEC.forEach(sc=>{let d=0,y=0,b=0,g=0;for(let n=sc.q0;n<=sc.q1;n++){const s=st(n-1);if(!s)continue;g++;if(s==='D')d++;else if(s==='B')b++;else y++;}
     const per=g?100/g:0,len=sc.q1-sc.q0+1;
-    const docs=docNames(sc.key).map((nm,j)=>{const loc=parseRange(docRanges(book,sc.key)[j],len);let dd=0,gg=0;loc.forEach(l=>{const s=st(sc.q0+l-2);if(!s)return;gg++;if(s==='D')dd++;});return{name:nm,D:dd,G:gg,pts:r2(dd*per),max:r2(gg*per),qtxt:docRanges(book,sc.key)[j]||''};});
+    const DW=docWeights(book,sc.key,len).W;const docs=docNames(sc.key).map((nm,j)=>{let dd=0,gg=0;Object.entries(DW[j]).forEach(([l,w])=>{const s=st(sc.q0+(+l)-2);if(!s)return;gg+=w;if(s==='D')dd+=w;});return{name:nm,D:r2(dd),G:r2(gg),pts:r2(dd*per),max:r2(gg*per),qtxt:docRanges(book,sc.key)[j]||''};});
     const so={name:sc.name,D:d,Y:y,B:b,G:g,pts:g?r2(d*per):0,max:g?100:0,docs};secs.push(so);
     if(multi)grp.push({name:sc.name,pts:so.pts,max:so.max,D:d,G:g,kind:'sec',qtxt:`1-${len}`});
     docs.forEach(x=>grp.push({name:multi?`${sc.name} · ${x.name}`:x.name,pts:x.pts,max:x.max,D:x.D,G:x.G,kind:'doc',qtxt:x.qtxt}));});
@@ -1539,11 +1551,11 @@ function docBox(){const box=$('#docBox');if(!box||!S.tpl){if(box)box.innerHTML='
     h+=`<div class="docsec" data-k="${sc.key}"><div class="docrow"><b style="flex:1">${esc(sc.name)} <span class="dim">(${len} soru)</span></b><span class="dim">DÖÇ sayısı</span><button class="btn sec" data-a="-">−</button><b class="dn">${N.length}</b><button class="btn sec" data-a="+">+</button></div>`;
     const B0=BOOKS()[0];if(N.length&&EB!==B0){const mp=((S.cfg.bmap||{})[EB]||{})[sc.key]||'';
       h+=`<div class="docrow" style="flex-wrap:wrap;background:var(--soft,#f3f7f8);padding:6px;border-radius:8px;margin:4px 0"><span style="flex:1 1 100%;font-size:13px"><b>${EB} kitapçığının soru sırası</b> — ${EB}'deki her sorunun ${B0}'daki numarası, sırayla. DÖÇ'ler ${B0}'ya göre kendiliğinden atanır.</span><input class="bmap" style="flex:1" value="${esc(mp)}" placeholder="örn. 5,3,1,2,4… (${EB}'nin 1. sorusu = ${B0}'nın 5. sorusu)"><button class="btn sec bkey" style="flex:0 0 auto" title="Şıklar karıştırılmadıysa">${B0} anahtarından ${EB} anahtarını oluştur</button>${mp?bmapCheck(mp,len):''}</div>`;}
-    if(N.length){const used={};N.forEach((nm,j)=>parseRange(Q[j],len).forEach(q=>used[q]=(used[q]||0)+1));const miss=[];for(let q=1;q<=len;q++)if(!used[q])miss.push(q);const dup=Object.keys(used).filter(q=>used[q]>1);
+    if(N.length){const used={};N.forEach((nm,j)=>parseRange(Q[j],len).forEach(q=>used[q]=(used[q]||0)+1));const miss=[];for(let q=1;q<=len;q++)if(!used[q])miss.push(q);const dup=Object.keys(used).filter(q=>used[q]>1);const WI=docWeights(EB,sc.key,len);const dupT=dup.map(q=>{const w=WI.W.map(m=>m[q]).filter(v=>v!=null).map(v=>'%'+Math.round(v*100));return`${q} (${w.join('/')})`;});const over=Object.keys(WI.info).filter(q=>WI.info[q].over);
       h+=N.map((nm,j)=>`<div class="docrow"><input class="dname" data-j="${j}" value="${esc(nm)}"><input class="dq" data-j="${j}" value="${esc(Q[j]||'')}" placeholder="örn. 1-8" inputmode="text"></div>`).join('')+
-        `<div class="hint" style="margin-top:2px">${miss.length?`⚠ DÖÇ'e atanmamış sorular: ${miss.join(', ')}`:'✓ Tüm sorular bir DÖÇ’e atandı'}${dup.length?` · İki DÖÇ'te birden: ${dup.join(', ')}`:''}</div>`;}
+        `<div class="hint" style="margin-top:2px">${miss.length?`⚠ DÖÇ'e atanmamış sorular: ${miss.join(', ')}`:'✓ Tüm sorular bir DÖÇ’e atandı'}${dup.length?`<br>↔ Birden fazla DÖÇ'te, puanı bölünen sorular: ${dupT.join(', ')}`:''}${over.length?`<br>⚠ Yüzdeleri 100 etmeyen sorular (orantılı dağıtıldı): ${over.join(', ')}`:''}</div>`;}
     h+='</div>';});
-  h+='<div class="hint">Soru numaraları her sınavın kendi numarasıdır (1, 2, 3…). Aralık için 1-8, tek tek için 3,5,9 yazabilirsiniz.</div>';
+  h+='<div class="hint">Soru numaraları her sınavın kendi numarasıdır (1, 2, 3…). Aralık için 1-8, tek tek için 3,5,9 yazabilirsiniz. Bir soru birden fazla DÖÇ’teyse puanı eşit bölünür; farklı oran için numaranın yanına yüzde yazın: DÖÇ1’e <b>6:60</b>, DÖÇ2’ye <b>6:40</b>.</div>';
   box.innerHTML=h;
   box.querySelectorAll('.docsec').forEach(d=>{const key=d.dataset.k,sc=SEC.find(s=>s.key===key),len=sc.q1-sc.q0+1;
     d.querySelectorAll('button[data-a]').forEach(bt=>bt.onclick=()=>{setDocCount(key,docNames(key).length+(bt.dataset.a==='+'?1:-1),len);docBox();if(cur)drawStu();});
@@ -1559,7 +1571,8 @@ function bmapCheck(t,len){const L=parseOrder(t);if(!L)return'<span class="hint" 
   return`<span class="hint" style="flex:1 1 100%;${L.length===len&&!miss.length?'':'color:#c0392b'}">${L.length===len&&!miss.length&&!dup.length?`✓ ${len} sorunun sırası tamam`:`⚠ ${L.length}/${len} soru${miss.length?' · eksik: '+miss.slice(0,12).join(','):''}${dup.length?' · tekrar: '+[...new Set(dup)].join(','):''}`}</span>`;}
 function applyBmap(){const M=S.cfg.bmap||{};const A=BOOKS()[0];sections().forEach(sc=>{const len=sc.q1-sc.q0+1;const N=docNames(sc.key);if(!N.length)return;const RA=N.map((nm,j)=>parseRange(docRanges(A,sc.key)[j],len));
   Object.keys(M).forEach(b=>{if(b===A||!BOOKS().includes(b))return;const L=parseOrder(M[b]&&M[b][sc.key]);if(!L||!L.length)return;S.cfg.docQ=S.cfg.docQ||{};const Q=(S.cfg.docQ[b]=S.cfg.docQ[b]||{});
-    Q[sc.key]=N.map((nm,j)=>compress(L.map((a,l)=>RA[j].includes(a)?l+1:0).filter(Boolean)));});});}
+    const RW=N.map((nm,j)=>parseRangeW(docRanges(A,sc.key)[j],len));Q[sc.key]=N.map((nm,j)=>fmtRangeW(L.map((a,l)=>RA[j].includes(a)?{q:l+1,w:RW[j][a]}:null).filter(Boolean)));});});}
+function fmtRangeW(E){const pl=E.filter(e=>e.w==null).map(e=>e.q),wt=E.filter(e=>e.w!=null).sort((a,b)=>a.q-b.q).map(e=>`${e.q}:${e.w}`);return[compress(pl),...wt].filter(Boolean).join(', ');}
 async function onStu(f){if(!S.keyOk){toast('Önce cevap anahtarını onaylayın');return;}
   try{await cvReady();busy(true,'Öğrenci kâğıdı okunuyor…');await sleep(30);
     const isG=S.tpl.kind==='grid';const c=f instanceof HTMLCanvasElement?f:await loadFile(f,isG?2200:2400);const tc=await getTplCanvas();const t0=performance.now();const r=isG?GRID.read(c,S.tpl,{wantWarp:true}):ownF(FREE.read(c,[{tpl:tplObj(),canvas:tc}],{wantWarp:true,wantName:true}));busy(false);
@@ -1873,8 +1886,8 @@ function buildXlsx(){const n=S.cfg.n;const qh=[];const QS=S.tpl&&S.tpl.kind==='g
     const dcNo=(nm,j)=>{const m=String(nm||'').match(/(\d+)\s*(#\s*[0-3])?/);return m?m[1]+(m[2]?m[2].replace(/\s/g,''):''):String(j+1);};
     SEC.forEach(sc=>{const len=sc.q1-sc.q0+1;const N=docNames(sc.key);const R=N.map((nm,j)=>parseRange(docRanges(bk,sc.key)[j],len));
       let g=0;for(let l=1;l<=len;l++)if(KK[sc.q0+l-2])g++;const per=g?Math.round(100/g*100)/100:0;
-      const rows=[];let mx=1;for(let l=1;l<=len;l++){const ds=[];N.forEach((nm,j)=>{if(R[j].includes(l))ds.push(dcNo(nm,j));});mx=Math.max(mx,ds.length);
-        rows.push([l,KK[sc.q0+l-2]?per:0,QT[sc.q0+l-2]||'',...[].concat(...ds.map(d=>[/^\d+$/.test(d)?+d:d,'']))]);}
+      const WI=docWeights(bk,sc.key,len);const rows=[];let mx=1;for(let l=1;l<=len;l++){const ds=[];const ex=WI.info[l]&&WI.info[l].ex;N.forEach((nm,j)=>{if(R[j].includes(l))ds.push([dcNo(nm,j),ex?Math.round(WI.W[j][l]*1000)/10:'']);});mx=Math.max(mx,ds.length);
+        rows.push([l,KK[sc.q0+l-2]?per:0,QT[sc.q0+l-2]||'',...[].concat(...ds.map(([d,w])=>[/^\d+$/.test(d)?+d:d,w]))]);}
       const head=['Soru No','Soru Puanı','Soru Metni'];for(let k=0;k<mx;k++)head.push('DÇ(Ders öğrenme çıktısı) no','DÇ Etki Oranı');
       const nm=(SEC.length>1?'DÇ '+sc.name:'DÇ Aktarım').replace(/[\\\/?*\[\]:]/g,'').slice(0,31).trim();
       dcSheets.push([nm,sheetXml([head,...rows],[8,10,60,...Array(mx*2).fill(14)])]);});}
