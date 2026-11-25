@@ -53,7 +53,7 @@ input[type=text],input[type=number],select{width:100%;padding:10px;border:1px so
 </style>
 </head>
 <body>
-<header style="display:flex;align-items:center;gap:8px"><h1 id="hTitle" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Optik Okuyucu</h1><span id="ver" style="font-size:12px;opacity:.85;background:rgba(255,255,255,.15);padding:3px 8px;border-radius:10px;white-space:nowrap">v4.1 · 24.11</span></header>
+<header style="display:flex;align-items:center;gap:8px"><h1 id="hTitle" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Optik Okuyucu</h1><span id="ver" style="font-size:12px;opacity:.85;background:rgba(255,255,255,.15);padding:3px 8px;border-radius:10px;white-space:nowrap">v4.2 · 25.11</span></header>
 <div class="steps">
   <button data-v="1" class="on"><span class="n">1</span>Boş kâğıt</button>
   <button data-v="2"><span class="n">2</span>Anahtar</button>
@@ -1537,6 +1537,8 @@ function docBox(){const box=$('#docBox');if(!box||!S.tpl){if(box)box.innerHTML='
   let h='<div class="dochead">Öğrenme çıktıları (DÖÇ)'+(MULTI()?` — ${EB} kitapçığı`:'')+'</div>';
   SEC.forEach(sc=>{const len=sc.q1-sc.q0+1,N=docNames(sc.key),Q=docRanges(EB,sc.key);
     h+=`<div class="docsec" data-k="${sc.key}"><div class="docrow"><b style="flex:1">${esc(sc.name)} <span class="dim">(${len} soru)</span></b><span class="dim">DÖÇ sayısı</span><button class="btn sec" data-a="-">−</button><b class="dn">${N.length}</b><button class="btn sec" data-a="+">+</button></div>`;
+    const B0=BOOKS()[0];if(N.length&&EB!==B0){const mp=((S.cfg.bmap||{})[EB]||{})[sc.key]||'';
+      h+=`<div class="docrow" style="flex-wrap:wrap;background:var(--soft,#f3f7f8);padding:6px;border-radius:8px;margin:4px 0"><span style="flex:1 1 100%;font-size:13px"><b>${EB} kitapçığının soru sırası</b> — ${EB}'deki her sorunun ${B0}'daki numarası, sırayla. DÖÇ'ler ${B0}'ya göre kendiliğinden atanır.</span><input class="bmap" style="flex:1" value="${esc(mp)}" placeholder="örn. 5,3,1,2,4… (${EB}'nin 1. sorusu = ${B0}'nın 5. sorusu)"><button class="btn sec bkey" style="flex:0 0 auto" title="Şıklar karıştırılmadıysa">${B0} anahtarından ${EB} anahtarını oluştur</button>${mp?bmapCheck(mp,len):''}</div>`;}
     if(N.length){const used={};N.forEach((nm,j)=>parseRange(Q[j],len).forEach(q=>used[q]=(used[q]||0)+1));const miss=[];for(let q=1;q<=len;q++)if(!used[q])miss.push(q);const dup=Object.keys(used).filter(q=>used[q]>1);
       h+=N.map((nm,j)=>`<div class="docrow"><input class="dname" data-j="${j}" value="${esc(nm)}"><input class="dq" data-j="${j}" value="${esc(Q[j]||'')}" placeholder="örn. 1-8" inputmode="text"></div>`).join('')+
         `<div class="hint" style="margin-top:2px">${miss.length?`⚠ DÖÇ'e atanmamış sorular: ${miss.join(', ')}`:'✓ Tüm sorular bir DÖÇ’e atandı'}${dup.length?` · İki DÖÇ'te birden: ${dup.join(', ')}`:''}</div>`;}
@@ -1546,7 +1548,18 @@ function docBox(){const box=$('#docBox');if(!box||!S.tpl){if(box)box.innerHTML='
   box.querySelectorAll('.docsec').forEach(d=>{const key=d.dataset.k,sc=SEC.find(s=>s.key===key),len=sc.q1-sc.q0+1;
     d.querySelectorAll('button[data-a]').forEach(bt=>bt.onclick=()=>{setDocCount(key,docNames(key).length+(bt.dataset.a==='+'?1:-1),len);docBox();if(cur)drawStu();});
     d.querySelectorAll('.dname').forEach(inp=>inp.onchange=()=>{const N=docNames(key);N[+inp.dataset.j]=inp.value.trim()||N[+inp.dataset.j];persist();docBox();});
-    d.querySelectorAll('.dq').forEach(inp=>inp.onchange=()=>{S.cfg.docQ=S.cfg.docQ||{};const Q=(S.cfg.docQ[EB]=S.cfg.docQ[EB]||{});const base=docRanges(EB,key).slice();while(base.length<docNames(key).length)base.push('');base[+inp.dataset.j]=inp.value.trim();Q[key]=base;persist();docBox();if(cur)drawStu();});});}
+    d.querySelectorAll('.dq').forEach(inp=>inp.onchange=()=>{S.cfg.docQ=S.cfg.docQ||{};const Q=(S.cfg.docQ[EB]=S.cfg.docQ[EB]||{});const base=docRanges(EB,key).slice();while(base.length<docNames(key).length)base.push('');base[+inp.dataset.j]=inp.value.trim();Q[key]=base;if(EB===BOOKS()[0])applyBmap();persist();docBox();if(cur)drawStu();});
+    const bm=d.querySelector('.bmap');if(bm)bm.onchange=()=>{S.cfg.bmap=S.cfg.bmap||{};const M=(S.cfg.bmap[EB]=S.cfg.bmap[EB]||{});M[key]=bm.value.trim();applyBmap();persist();docBox();if(cur)drawStu();
+      const L=parseOrder(M[key]);toast(L&&L.length===len&&new Set(L).size===len?`${EB} kitapçığının DÖÇ'leri ${BOOKS()[0]}'ya göre atandı`:'Sıra listesi eksik ya da hatalı, kontrol edin');};
+    const bk=d.querySelector('.bkey');if(bk)bk.onclick=()=>{const M=((S.cfg.bmap||{})[EB]||{})[key];const L=parseOrder(M);if(!L||L.length!==len||new Set(L).size!==len){toast(`Önce ${EB} kitapçığının soru sırasını eksiksiz girin`);return;}
+      const KA=keyOf(BOOKS()[0]);const KB=keyOf(EB).slice();L.forEach((a,l)=>{KB[sc.q0+l-1]=KA[sc.q0+a-2]||'';});S.keys[EB]=KB;S.okb[EB]=false;S.keyOk=false;persist();drawKey();docBox();toast(`${EB} anahtarı ${BOOKS()[0]}'dan oluşturuldu (şıklar karışmadıysa doğrudur). Kontrol edip onaylayın.`);};});}
+/* B (ve sonraki) kitapçığın soru sırası: "5,3,1-2,4" → [5,3,1,2,4]; DÖÇ aralıkları A'dakinden hesaplanır */
+function parseOrder(t){if(!t)return null;const o=[];for(const p of String(t).split(/[\s,;]+/).filter(Boolean)){const m=p.match(/^(\d+)(?:-(\d+))?$/);if(!m)return null;const a=+m[1],b=m[2]?+m[2]:a;if(b>=a)for(let x=a;x<=b;x++)o.push(x);else for(let x=a;x>=b;x--)o.push(x);}return o;}
+function bmapCheck(t,len){const L=parseOrder(t);if(!L)return'<span class="hint" style="flex:1 1 100%;color:#c0392b">⚠ Liste okunamadı (sadece sayı, virgül ve tire)</span>';const miss=[];for(let q=1;q<=len;q++)if(!L.includes(q))miss.push(q);const dup=L.filter((v,i)=>L.indexOf(v)!==i);
+  return`<span class="hint" style="flex:1 1 100%;${L.length===len&&!miss.length?'':'color:#c0392b'}">${L.length===len&&!miss.length&&!dup.length?`✓ ${len} sorunun sırası tamam`:`⚠ ${L.length}/${len} soru${miss.length?' · eksik: '+miss.slice(0,12).join(','):''}${dup.length?' · tekrar: '+[...new Set(dup)].join(','):''}`}</span>`;}
+function applyBmap(){const M=S.cfg.bmap||{};const A=BOOKS()[0];sections().forEach(sc=>{const len=sc.q1-sc.q0+1;const N=docNames(sc.key);if(!N.length)return;const RA=N.map((nm,j)=>parseRange(docRanges(A,sc.key)[j],len));
+  Object.keys(M).forEach(b=>{if(b===A||!BOOKS().includes(b))return;const L=parseOrder(M[b]&&M[b][sc.key]);if(!L||!L.length)return;S.cfg.docQ=S.cfg.docQ||{};const Q=(S.cfg.docQ[b]=S.cfg.docQ[b]||{});
+    Q[sc.key]=N.map((nm,j)=>compress(L.map((a,l)=>RA[j].includes(a)?l+1:0).filter(Boolean)));});});}
 async function onStu(f){if(!S.keyOk){toast('Önce cevap anahtarını onaylayın');return;}
   try{await cvReady();busy(true,'Öğrenci kâğıdı okunuyor…');await sleep(30);
     const isG=S.tpl.kind==='grid';const c=f instanceof HTMLCanvasElement?f:await loadFile(f,isG?2200:2400);const tc=await getTplCanvas();const t0=performance.now();const r=isG?GRID.read(c,S.tpl,{wantWarp:true}):ownF(FREE.read(c,[{tpl:tplObj(),canvas:tc}],{wantWarp:true,wantName:true}));busy(false);
@@ -1577,24 +1590,30 @@ async function onBatch(files){if(!S.keyOk){toast('Önce cevap anahtarını onayl
   try{await cvReady();const isG=S.tpl.kind==='grid',MX=isG?2200:2400;const items=[];busy(true,'Dosyalar hazırlanıyor…');
     for(const f of files){if(isPdf(f)){const d=await openPdf(f);for(let i=1;i<=d.numPages;i++)items.push({doc:d,i,label:`${f.name} · sayfa ${i}`});}else items.push({f,label:f.name});}
     BATCH={review:[],saved:0,fail:[],total:items.length};
-    for(let k=0;k<items.length;k++){const it=items[k];busy(true,`Okunuyor: ${k+1} / ${items.length}\n${it.label}`);await sleep(10);
-      let c;try{c=it.doc?await renderPage(it.doc,it.i,MX):await loadImg(it.f,MX);}catch(e){BATCH.fail.push(it.label);continue;}
-      const t0=performance.now();let r;try{r=await readCanvas(c);}catch(e){r={ok:false};}
-      if(!r.ok){BATCH.fail.push(it.label);continue;}
+    BATCH.items=items;BATCH.MX=MX;
+    for(let k=0;k<items.length;k++){const it=items[k];busy(true,`Okunuyor: ${k+1} / ${items.length}\n${it.label}\n✓ ${BATCH.saved} kaydedildi · 🔎 ${BATCH.review.length} kontrol · ✗ ${BATCH.fail.length} okunamadı`);await sleep(10);
+      let c;try{c=it.doc?await renderPage(it.doc,it.i,MX):await loadImg(it.f,MX);}catch(e){BATCH.fail.push(it.label+' (sayfa açılamadı'+(/memory|alloc/i.test(e&&e.message||'')?', bellek yetmedi':'')+')');continue;}
+      const t0=performance.now();let r;try{r=await readCanvas(c);}catch(e){r={ok:false,err:e&&e.message};}
+      c.width=c.height=0;// sayfa resmini hemen bırak (telefonda bellek dolmasın)
+      if(!r.ok){BATCH.fail.push(it.label+(r.err?' ('+r.err+')':''));continue;}
       let dbl=0,any=0;for(let i=1;i<=S.cfg.n;i++){if(r.answers[i]==='*')dbl++;if(r.answers[i])any++;}
       if(!any&&!(r.fields&&((r.fields.no||'').replace(/[0_?]/g,'')||r.fields.name))){BATCH.blank=(BATCH.blank||0)+1;continue;}
       const F0=r.fields||{},iss=noIssue(F0.no),noBad=iss==='part'||iss==='short'||(iss==='none'&&noExpected());const bookBad=MULTI()&&S.tpl.bookOn&&!BOOKS().includes(F0.book);
-      if(!r.amb&&!dbl&&!noBad&&!bookBad&&!(r.fields&&r.fields.book&&!BOOKS().includes(r.fields.book))){showStu(r,Math.round(performance.now()-t0),true);cur.label=it.label;saveCur(true);BATCH.saved++;}
-      else{r.warp=r.warp;BATCH.review.push({r,ms:Math.round(performance.now()-t0),label:it.label,why:[r.amb?`${r.amb} belirsiz işaret`:'',dbl?`${dbl} çift işaret`:'',noBad?(iss==='part'?'numarada okunamayan hane var':iss==='short'?'numara eksik haneli':'öğrenci no bulunamadı'):'',bookBad?'kitapçık türü bulunamadı':''].filter(Boolean).join(', ')||'kitapçık anahtarı yok'});}}
-    items.forEach(it=>{if(it.doc){try{it.doc.destroy();}catch(e){}}});busy(false);renderList();
+      if(!r.amb&&!dbl&&!noBad&&!bookBad&&!(r.fields&&r.fields.book&&!BOOKS().includes(r.fields.book))){showStu(r,Math.round(performance.now()-t0),true);cur.label=it.label;saveCur(true);BATCH.saved++;await IMGP;if(r.warp)r.warp.width=r.warp.height=0;cur=null;}
+      else{if(r.warp)r.warp.width=r.warp.height=0;BATCH.review.push({it,label:it.label,why:[r.amb?`${r.amb} belirsiz işaret`:'',dbl?`${dbl} çift işaret`:'',noBad?(iss==='part'?'numarada okunamayan hane var':iss==='short'?'numara eksik haneli':'öğrenci no bulunamadı'):'',bookBad?'kitapçık türü bulunamadı':''].filter(Boolean).join(', ')||'kitapçık anahtarı yok'});}}
+    busy(false);renderList();
     msg('#m3','ok',`📄 <b>${BATCH.total}</b> sayfa okundu: <b>${BATCH.saved}</b> kâğıt otomatik kaydedildi`+(BATCH.review.length?`, <b>${BATCH.review.length}</b> kâğıt kontrolünüzü bekliyor (aşağıda sırayla gelecek)`:'')+(BATCH.blank?`, ${BATCH.blank} boş sayfa atlandı`:'')+(BATCH.fail.length?`. <b>Okunamayan ${BATCH.fail.length} sayfa:</b> ${BATCH.fail.map(esc).join(', ')}`:'')+'.');
     batchNext();}
   catch(e){busy(false);msg('#m3','bad','Hata: '+esc(e.message));}}
 function batchDoneMsg(){const box=document.createElement('div');box.className='btns';box.style.marginTop='8px';box.innerHTML='<button class="btn" id="bdX">📊 Excel indir</button>'+(S.results.some(r=>r.hasImg)?'<button class="btn sec" id="bdP">📄 Okunmuş PDF indir</button>':'');
   const m=$('#m3');const old=m.querySelector('.btns');if(old)old.remove();(m.firstElementChild||m).appendChild(box);
   box.querySelector('#bdX').onclick=()=>{if(!S.results.length){toast('Henüz sonuç yok');return;}download(buildXlsx(),fname());};const p=box.querySelector('#bdP');if(p)p.onclick=pdfOut;}
-function batchNext(){if(!BATCH)return;const it=BATCH.review.shift();if(!it){if(BATCH.total){$('#stuBox').style.display='none';toast('Toplu okuma bitti ✓');batchDoneMsg();}BATCH=null;$('#batchSt').style.display='none';return;}
-  showStu(it.r,it.ms);cur.label=it.label;$('#batchSt').style.display='';$('#batchSt').innerHTML=`🔎 Kontrol: <b>${esc(it.label)}</b> — ${esc(it.why)}. Gerekirse balonlara dokunup düzeltin. <span class="dim">(kalan ${BATCH.review.length})</span>`;}
+function batchEnd(){if(BATCH&&BATCH.items)BATCH.items.forEach(it=>{if(it.doc){try{it.doc.destroy();}catch(e){}}});}
+async function batchNext(){if(!BATCH)return;const it=BATCH.review.shift();if(!it){if(BATCH.total){$('#stuBox').style.display='none';toast('Toplu okuma bitti ✓');batchDoneMsg();}batchEnd();BATCH=null;$('#batchSt').style.display='none';return;}
+  /* kontrol bekleyen sayfa bellekte tutulmaz; sırası gelince yeniden açılıp okunur */
+  busy(true,`Kontrol için açılıyor: ${it.label}`);let r=null;const t0=performance.now();try{const c=it.it.doc?await renderPage(it.it.doc,it.it.i,BATCH.MX):await loadImg(it.it.f,BATCH.MX);r=await readCanvas(c);c.width=c.height=0;}catch(e){r=null;}busy(false);
+  if(!r||!r.ok){BATCH.fail.push(it.label);return batchNext();}
+  showStu(r,Math.round(performance.now()-t0));cur.label=it.label;$('#batchSt').style.display='';$('#batchSt').innerHTML=`🔎 Kontrol: <b>${esc(it.label)}</b> — ${esc(it.why)}. Gerekirse balonlara dokunup düzeltin. <span class="dim">(kalan ${BATCH.review.length})</span>`;}
 function showStu(r,ms,silent){postRead(r);const ans=[];for(let i=0;i<S.cfg.n;i++)ans.push(r.answers[i+1]||'');
   let book=BOOKS()[0];const F=r.fields||{};
   if(F.book&&BOOKS().includes(F.book))book=F.book;else if(MULTI()){let bd=-1;BOOKS().forEach(b=>{const d=grade(ans,b).D;if(d>bd){bd=d;book=b;}});}
@@ -1751,23 +1770,34 @@ function annotCanvas(C,info){const w=C.r.warp;if(!w)return null;const g=grade(C.
     if(l[3]){const tw=x.measureText(l[0]).width;x.font=Math.round(fs*0.95)+'px sans-serif';x.fillStyle='#333';x.fillText(l[3],fs*0.6+tw+fs,y+h*0.32);}y+=h;});
   x.fillStyle='#0b5c73';x.fillRect(0,head-4,W,4);
   x.save();x.translate(0,head);x.scale(k,k);x.drawImage(w,0,0);paintMarks(x,C,KK,R);x.restore();return o;}
+let IMGP=Promise.resolve();
 const toJpeg=c=>new Promise(res=>c.toBlob(res,'image/jpeg',0.82));
-/* basit PDF: her sayfa bir JPEG resim */
-async function buildPdf(blobs){const enc=new TextEncoder();const parts=[];let len=0;const off=[];const push=b=>{if(typeof b==='string')b=enc.encode(b);parts.push(b);len+=b.length;};
-  const imgs=[];for(const b of blobs){const buf=new Uint8Array(await b.arrayBuffer());const bm=await createImageBitmap(b);imgs.push({buf,w:bm.width,h:bm.height});bm.close&&bm.close();}
-  const n=imgs.length;const obj=(i,body)=>{off[i]=len;push(`${i} 0 obj\n`);body();push('\nendobj\n');};
+/* PDF: her sayfa bir JPEG resim + görünmez metin katmanı (Bul/Ara ile bulunur) + öğrenci yer imleri */
+const PDFMAP={'Ğ':128,'ğ':129,'İ':130,'ı':131,'Ş':132,'ş':133,'·':0xB7};
+const pdfHex=t=>{let h='';for(const ch of String(t)){let c=PDFMAP[ch];if(c==null){const u=ch.charCodeAt(0);c=(u>=32&&u<127)||(u>=0xA0&&u<=0xFF)?u:63;}h+=c.toString(16).padStart(2,'0');}return'<'+h+'>';};
+const pdfU16=t=>{let h='FEFF';for(const ch of String(t)){const u=ch.charCodeAt(0);h+=u.toString(16).padStart(4,'0').toUpperCase();}return'<'+h+'>';};
+async function buildPdf(pages){const enc=new TextEncoder();const parts=[];let len=0;const off=[];const push=b=>{if(typeof b==='string')b=enc.encode(b);parts.push(b);len+=b.length;};
+  const imgs=[];for(const pg of pages){const b=pg.blob||pg;const buf=new Uint8Array(await b.arrayBuffer());const bm=await createImageBitmap(b);imgs.push({buf,w:bm.width,h:bm.height,title:pg.title||'',lines:pg.lines||[]});bm.close&&bm.close();}
+  const n=imgs.length,P0=5,pn=i=>P0+i*4;const obj=(i,body)=>{off[i]=len;push(`${i} 0 obj\n`);body();push('\nendobj\n');};
   push('%PDF-1.4\n%\xE2\xE3\n');
-  obj(1,()=>push('<< /Type /Catalog /Pages 2 0 R >>'));
-  obj(2,()=>push(`<< /Type /Pages /Count ${n} /Kids [${imgs.map((_,i)=>`${3+i*3} 0 R`).join(' ')}] >>`));
-  imgs.forEach((im,i)=>{const p=3+i*3;const land=im.w>im.h;const PW=land?842:595,PH=Math.round(PW*im.h/im.w);
-    obj(p,()=>push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${PW} ${PH}] /Resources << /XObject << /Im${i} ${p+2} 0 R >> >> /Contents ${p+1} 0 R >>`));
-    const cs=`q ${PW} 0 0 ${PH} 0 0 cm /Im${i} Do Q`;obj(p+1,()=>push(`<< /Length ${cs.length} >>\nstream\n${cs}\nendstream`));
-    obj(p+2,()=>{push(`<< /Type /XObject /Subtype /Image /Width ${im.w} /Height ${im.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${im.buf.length} >>\nstream\n`);push(im.buf);push('\nendstream');});});
-  const xref=len;const N=3+n*3;let t=`xref\n0 ${N}\n0000000000 65535 f \n`;for(let i=1;i<N;i++)t+=String(off[i]).padStart(10,'0')+' 00000 n \n';push(t+`trailer\n<< /Size ${N} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`);
+  obj(1,()=>push('<< /Type /Catalog /Pages 2 0 R /Outlines 4 0 R /PageMode /UseOutlines >>'));
+  obj(2,()=>push(`<< /Type /Pages /Count ${n} /Kids [${imgs.map((_,i)=>`${pn(i)} 0 R`).join(' ')}] >>`));
+  obj(3,()=>push('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding << /Type /Encoding /BaseEncoding /WinAnsiEncoding /Differences [128 /Gbreve /gbreve /Idotaccent /dotlessi /Scedilla /scedilla] >> >>'));
+  obj(4,()=>push(n?`<< /Type /Outlines /First ${pn(0)+3} 0 R /Last ${pn(n-1)+3} 0 R /Count ${n} >>`:'<< /Type /Outlines /Count 0 >>'));
+  imgs.forEach((im,i)=>{const p=pn(i);const land=im.w>im.h;const PW=land?842:595,PH=Math.round(PW*im.h/im.w);
+    obj(p,()=>push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${PW} ${PH}] /Resources << /XObject << /Im${i} ${p+2} 0 R >> /Font << /F1 3 0 R >> >> /Contents ${p+1} 0 R >>`));
+    // görünmez metin (3 Tr): üstteki başlık şeridinin üzerine; seçilip aranabilir ama görünmez
+    const fs=Math.max(8,Math.round(PW/60));let tx=`BT 3 Tr /F1 ${fs} Tf ${Math.round(PW*0.012)} ${PH-fs*1.3} Td ${Math.round(fs*1.4)} TL`;im.lines.forEach((l,k)=>{tx+=(k?' T*':'')+' '+pdfHex(l)+' Tj';});tx+=' ET';
+    const cs=`q ${PW} 0 0 ${PH} 0 0 cm /Im${i} Do Q\n${tx}`;obj(p+1,()=>push(`<< /Length ${cs.length} >>\nstream\n${cs}\nendstream`));
+    obj(p+2,()=>{push(`<< /Type /XObject /Subtype /Image /Width ${im.w} /Height ${im.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${im.buf.length} >>\nstream\n`);push(im.buf);push('\nendstream');});
+    obj(p+3,()=>push(`<< /Title ${pdfU16(im.title||('Sayfa '+(i+1)))} /Parent 4 0 R${i?` /Prev ${pn(i-1)+3} 0 R`:''}${i<n-1?` /Next ${pn(i+1)+3} 0 R`:''} /Dest [${p} 0 R /Fit] >>`));});
+  const xref=len;const N=P0+n*4;let t=`xref\n0 ${N}\n0000000000 65535 f \n`;for(let i=1;i<N;i++)t+=String(off[i]).padStart(10,'0')+' 00000 n \n';push(t+`trailer\n<< /Size ${N} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`);
   return new Blob(parts,{type:'application/pdf'});}
+const pdfInfo=r=>{const g=r.grp||[];return{title:[r.no,r.name,r.book&&MULTI()?r.book+' kitapçığı':'',fmt(r.score)+' puan'].filter(Boolean).join(' – '),
+  lines:[`Ad Soyad: ${r.name||'-'}   Numara: ${r.no||'-'}${r.book&&MULTI()?'   Kitapçık: '+r.book:''}`,`Puan: ${fmt(r.score)}   Doğru: ${r.D}   Yanlış: ${r.Y}   Boş: ${r.B}`,g.length?g.map(x=>`${x.name}: ${fmt(x.pts)}`).join('   '):'',r.src||''].filter(Boolean)};};
 const fbase=()=>(S.cfg.title||'sinav').replace(/[^\wçğıöşüÇĞİÖŞÜ -]/g,'').trim().replace(/\s+/g,'_');
 async function pdfOut(){const L=S.results.filter(r=>r.hasImg);if(!L.length){toast('Kayıtlı okunmuş kâğıt resmi yok. 3. adımda “Okunan kâğıtların işaretli resmini sakla” açık olmalı.');return;}
-  busy(true,'Okunmuş kâğıtlar PDF yapılıyor…');try{const B=[];for(const r of L){const b=await IDB.get('res_'+r.id);if(b)B.push(b);}if(!B.length){toast('Resimler bulunamadı');return;}
+  busy(true,'Okunmuş kâğıtlar PDF yapılıyor…');try{S.results.forEach(r=>{const g=grade(r.answers,r.book||'A');r.grp=g.grp;r.D=g.D;r.Y=g.Y;r.B=g.B;r.score=g.score;});const B=[];for(const r of L){const b=await IDB.get('res_'+r.id);if(b)B.push({blob:b,...pdfInfo(r)});}if(!B.length){toast('Resimler bulunamadı');return;}
     download(await buildPdf(B),fbase()+'_okunmus_kagitlar.pdf');}catch(e){toast('PDF hatası: '+e.message);}finally{busy(false);}}
 /* ---- öğrenci no / kitapçık çerçeveleri: elle çiz, aç-kapa (şablona kaydedilir, sonraki kâğıtlarda da kullanılır) ---- */
 const FLD={no:{on:'noOn',box:'noBox',col:'#1d6fd8',fill:'rgba(29,111,216,.08)',ad:'numara balonlarının'},book:{on:'bookOn',box:'bookBox',col:'#c0392b',fill:'rgba(192,57,43,.08)',ad:'kitapçık türü balonlarının'}};
@@ -1805,13 +1835,13 @@ $('#sNoTxt').addEventListener('input',()=>noUI());
 document.querySelectorAll('[data-z3]').forEach(b=>b.onclick=()=>{z3=b.dataset.z3==='+'?Math.min(4,z3*1.5):Math.max(1,z3/1.5);$('#c3').style.width=(z3*100)+'%';});
 function thumb(cv){if(!cv)return null;const t=document.createElement('canvas');const s=Math.min(1,600/cv.width);t.width=Math.round(cv.width*s);t.height=Math.round(cv.height*s);t.getContext('2d').drawImage(cv,0,0,t.width,t.height);return t.toDataURL('image/jpeg',0.6);}
 function saveCur(silent){if(!cur)return false;const g=grade(cur.ans,cur.book);const rid=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-  let hasImg=false;if(S.cfg.saveImg!==false&&cur.r&&cur.r.warp){try{const ac=annotCanvas(cur,{name:$('#sNameTxt').value.trim(),no:$('#sNoTxt').value.trim(),src:cur.label||''});if(ac){hasImg=true;toJpeg(ac).then(b=>b&&IDB.put('res_'+rid,b)).catch(()=>{});}}catch(e){console.log('img',e);}}
+  let hasImg=false;if(S.cfg.saveImg!==false&&cur.r&&cur.r.warp&&cur.r.warp.width){try{const ac=annotCanvas(cur,{name:$('#sNameTxt').value.trim(),no:$('#sNoTxt').value.trim(),src:cur.label||''});if(ac){hasImg=true;IMGP=IMGP.then(()=>toJpeg(ac)).then(b=>{ac.width=ac.height=0;return b&&IDB.put('res_'+rid,b);}).catch(()=>{});}}catch(e){console.log('img',e);}}
   S.results.push({id:rid,hasImg,src:cur.label||'',book:MULTI()?cur.book:'',bookEdited:cur.book!==cur.autoBook,name:$('#sNameTxt').value.trim(),no:$('#sNoTxt').value.trim(),tc:(cur.fields&&cur.fields.tc)||'',hwName:cur.hw?cur.hw.name:'',hwNo:cur.hw?cur.hw.no:'',answers:cur.ans.slice(),auto:cur.auto,ms:cur.ms,...g,img:thumb(cur.name),t:new Date().toISOString(),edited:cur.ans.join()!==cur.auto.join()});
   persist();stepState();if(!silent)toast(`Kaydedildi: ${fmt(g.score)} puan`);cur=null;$('#stuBox').style.display='none';return true;}
 $('#sSave').onclick=()=>{if(BATCH){if(saveCur())batchNext();return;}const sig=cur?cur.auto.map(a=>a||'-').join('')+(cur.r&&cur.r.fields?JSON.stringify(cur.r.fields):''):null;if(!saveCur())return;if(CAM.on)camResume(sig);else $('#fStu').click();};
 $('#sSaveOnly').onclick=()=>{const sig=cur?cur.auto.map(a=>a||'-').join('')+(cur.r&&cur.r.fields?JSON.stringify(cur.r.fields):''):null;if(saveCur()&&CAM.on)camResume(sig);};
 $('#sRetry').onclick=()=>{if(BATCH){cur=null;batchNext();return;}cur=null;$('#stuBox').style.display='none';if(CAM.on)camResume(null);else $('#fStu').click();};
-$('#sDrop').onclick=()=>{cur=null;$('#stuBox').style.display='none';if(CAM.on)camResume(null);};
+$('#sDrop').onclick=()=>{if(BATCH){cur=null;batchNext();return;}cur=null;$('#stuBox').style.display='none';if(CAM.on)camResume(null);};
 $('#fStu').onchange=e=>{const f=e.target.files[0];e.target.value='';if(f)onStu(f);};
 $('#fStu2').onchange=e=>{const fs=[...e.target.files];e.target.value='';if(fs.length>1||(fs[0]&&isPdf(fs[0])))onBatch(fs);else if(fs[0])onStu(fs[0]);};
 $('#fBatch').onchange=e=>{const fs=[...e.target.files];e.target.value='';if(fs.length)onBatch(fs);};
