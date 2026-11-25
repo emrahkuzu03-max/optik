@@ -10,14 +10,30 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 .extabs{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}.extabs .ex{border:1px solid #c9dade;background:#fff;border-radius:10px;padding:6px 10px;font-size:14px;text-align:left;cursor:pointer;color:inherit}.extabs .ex small{display:block;font-size:11px;opacity:.7}.extabs .ex.on{background:var(--p);color:#fff;border-color:var(--p)}.extabs .ex.add{border-style:dashed;color:var(--p)}.pj{border-top:1px solid #e3ecee;padding-top:8px;margin-top:8px}
-header{background:var(--p);color:#fff;padding:12px 16px;position:sticky;top:0;z-index:5}
+header{background:var(--p);color:#fff;padding:8px 10px;position:sticky;top:0;z-index:20;min-height:56px}
+.hb{background:rgba(255,255,255,.12);border:0;color:#fff;font-size:20px;width:40px;height:40px;border-radius:12px;flex:0 0 auto;cursor:pointer}
+.ht{flex:1;min-width:0}.ht h1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.hsub{font-size:12px;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.drw{position:fixed;top:0;bottom:0;width:86%;max-width:390px;background:#fff;z-index:40;overflow-y:auto;box-shadow:0 0 28px rgba(0,0,0,.25);transition:transform .25s ease,visibility .25s;padding:14px 14px 30px;visibility:hidden}
+.drw.r{right:0;transform:translateX(105%)}.drw.l{left:0;transform:translateX(-105%)}.drw.open{transform:none;visibility:visible}
+#ov{position:fixed;inset:0;background:rgba(10,30,36,.4);z-index:35;display:none}#ov.on{display:block}
+.mnu button{display:block;width:100%;text-align:left;border:0;background:none;padding:11px 8px;border-radius:12px;font-size:15.5px;color:var(--tx);cursor:pointer}.mnu button:hover,.mnu button:active{background:#eef4f5}.mnu small{display:block;font-size:12px;color:var(--mut);margin-left:28px}
+.dh{font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);margin:16px 8px 6px}
+.bsheet{position:fixed;left:0;right:0;bottom:0;background:#fff;z-index:40;border-radius:18px 18px 0 0;box-shadow:0 -8px 30px rgba(0,0,0,.2);transform:translateY(105%);visibility:hidden;transition:transform .25s ease,visibility .25s;padding:10px 14px calc(16px + env(safe-area-inset-bottom));max-height:88vh;overflow-y:auto;max-width:760px;margin:0 auto}
+.bsheet.open{transform:none;visibility:visible}.bsheet .grab{width:42px;height:5px;border-radius:3px;background:#cfd8db;margin:0 auto 10px}
+.bsheet .opt{display:flex;align-items:center;gap:12px;width:100%;border:0;background:#f3f7f8;border-radius:14px;padding:14px;margin:6px 0;font-size:16px;text-align:left;color:var(--tx);cursor:pointer}.bsheet .opt b{display:block}.bsheet .opt small{color:var(--mut);font-size:12.5px}.bsheet .opt .ic{font-size:26px}
+#fab{position:fixed;right:16px;bottom:84px;z-index:15;background:var(--acc);color:#fff;border:0;border-radius:30px;padding:16px 24px;font-size:17px;font-weight:700;box-shadow:0 6px 18px rgba(227,100,20,.45);cursor:pointer}
+body:not([data-v="3"]) #fab{display:none}.oldpick{display:none!important}
+.rrow{display:flex;align-items:center;gap:10px;padding:10px 6px;border-bottom:1px solid var(--line);cursor:pointer}.rrow:active{background:#f3f7f8}.rrow .who{flex:1;min-width:0}.rrow .who b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rrow .who small{color:var(--mut)}.rrow .who img{max-height:26px;max-width:100%}
+.rrow .pt{width:74px;text-align:right}.rrow .pt b{font-size:18px}.bar{height:5px;border-radius:3px;background:#e5ecee;margin-top:3px;overflow:hidden}.bar i{display:block;height:100%}
+@media(min-width:1100px){.drw{visibility:visible;transform:none;top:56px;box-shadow:none;width:300px;max-width:none;z-index:10}.drw.l{border-right:1px solid var(--line)}.drw.r{border-left:1px solid var(--line);width:330px}
+  #ov{display:none!important}.hb{display:none}main{margin-left:300px!important;margin-right:330px!important}.steps{left:300px!important;right:330px!important}#fab{right:350px}#dLClose,#pClose{display:none}}
 header h1{font-size:17px;margin:0}
-.steps{display:flex;background:#0b3a47;position:sticky;top:46px;z-index:5}
-.steps button{flex:1;border:0;background:none;color:#a9c6cd;padding:10px 2px;font-size:12.5px;font-weight:600;border-bottom:3px solid transparent}
-.steps button.on{color:#fff;border-bottom-color:var(--acc)}
-.steps button .n{display:inline-block;width:19px;height:19px;border-radius:50%;background:#2c5866;color:#fff;font-size:11.5px;line-height:19px;margin-right:4px}
+.steps{display:flex;background:#0b3a47;position:fixed;left:0;right:0;bottom:0;z-index:20;padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -4px 14px rgba(0,0,0,.15)}
+.steps button{flex:1;border:0;background:none;color:#a9c6cd;padding:7px 2px 8px;font-size:12px;font-weight:600;border-top:3px solid transparent;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer}.steps button .ic{font-size:19px;line-height:1.1;position:relative}
+.steps button.on{color:#fff;border-top-color:var(--acc)}
+.steps button .n{position:absolute;right:-12px;top:-4px;width:15px;height:15px;border-radius:50%;background:#2c5866;color:#fff;font-size:9.5px;line-height:15px;text-align:center}
 .steps button.done .n{background:var(--ok)}
-main{padding:12px 12px 40px;max-width:760px;margin:0 auto}
+main{padding:12px 12px 110px;max-width:760px;margin:0 auto}
 .card{background:#fff;border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
 .card h2{font-size:16px;margin:0 0 8px;color:var(--p)}
 label.f{display:block;font-size:12px;color:var(--mut);margin:8px 0 3px}
@@ -53,17 +69,33 @@ input[type=text],input[type=number],select{width:100%;padding:10px;border:1px so
 .nameimg{max-width:100%;border:1px solid var(--line);border-radius:8px;margin-top:8px;display:block}
 </style>
 </head>
-<body>
-<header style="display:flex;align-items:center;gap:8px"><img id="cbuLogo" src="cbu_logo.png" alt="CBÜ" style="height:34px;width:34px;object-fit:contain;background:#fff;border-radius:50%;padding:2px;flex:0 0 auto" onerror="this.style.display='none'"><h1 id="hTitle" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Optik Okuyucu</h1><span id="ver" style="font-size:12px;opacity:.85;background:rgba(255,255,255,.15);padding:3px 8px;border-radius:10px;white-space:nowrap">v1.0 · 25.11.2026</span></header>
-<div id="pbarW" style="background:#e8f1f3;border-bottom:1px solid #cfe0e4;padding:6px 12px;display:flex;align-items:center;gap:8px;font-size:14px"><div style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📁 <b id="pbP"></b> › 📝 <b id="pbE"></b> <span class="dim" id="pbN" style="font-size:12px"></span></div><button class="btn sec" id="pbBtn" style="padding:5px 10px;flex:0 0 auto;font-size:13px">Proje / sınav ▾</button></div>
-<div class="card" id="pPanel" hidden style="margin:8px 10px"><div class="row" style="align-items:center"><h2 style="flex:1;margin:0">Proje ve sınav seçin</h2><button class="btn sec" id="pClose" style="flex:0 0 auto;padding:4px 10px">✕</button></div>
+<body data-v="1">
+<header style="display:flex;align-items:center;gap:8px"><button class="hb" id="mL" title="Menü">☰</button><img id="cbuLogo" src="cbu_logo.png" alt="CBÜ" style="height:36px;width:36px;object-fit:contain;background:#fff;border-radius:50%;padding:2px;flex:0 0 auto" onerror="this.style.display='none'"><div class="ht"><h1 id="hTitle">Optik Okuyucu</h1><div class="hsub">📁 <span id="pbP"></span> › <span id="pbE"></span> · <span id="pbN"></span></div></div><span id="ver" style="font-size:11px;opacity:.8;white-space:nowrap">v1.0</span><button class="hb" id="pbBtn" title="Projeler ve sınavlar">📁</button></header>
+<div id="ov"></div>
+<aside class="drw l" id="dL"><div class="row" style="align-items:center;gap:10px;margin-bottom:6px"><img src="cbu_logo.png" alt="" style="height:40px;flex:0 0 auto" onerror="this.style.display='none'"><b style="flex:1;font-size:16px">Optik Okuyucu</b><button class="btn sec" id="dLClose" style="flex:0 0 auto;padding:4px 10px">✕</button></div>
+  <div class="dh">Hazırlık</div><nav class="mnu">
+    <button data-go="mk">📝 Sınav kâğıdı hazırla<small>Sorulardan Word: kitapçık, optik, anahtar</small></button>
+    <button data-go="old">📂 Eski sınavı yükle<small>Word / PDF / fotoğraftan soruları al, karıştır</small></button>
+    <button data-go="1">🧾 Optik formu tanıt<small>Boş kâğıt ya da hazır üniversite formu</small></button>
+    <button data-go="2">🔑 Cevap anahtarı ve DÖÇ</button></nav>
+  <div class="dh">Sonuç</div><nav class="mnu">
+    <button data-go="3">📷 Kâğıt oku</button>
+    <button data-go="4">📊 Sonuçlar · Excel · PDF</button>
+    <button data-go="pr">📁 Projeler ve sınavlar</button></nav>
+  <div class="dh">⚙ Ayarlar</div><div style="padding:0 6px">
+    <label style="display:flex;gap:8px;align-items:flex-start;margin:6px 0;font-size:14px"><input type="checkbox" id="cImg" checked style="width:20px;height:20px;flex:0 0 auto;margin-top:1px"><span>🖼 Okunan kâğıtların işaretli resmini sakla <small style="color:var(--mut)">(üstünde ad, numara ve puan; sonuçlardan tek tek ya da toplu PDF olarak indirilir)</small></span></label>
+    <label style="display:flex;gap:8px;align-items:flex-start;margin:6px 0;font-size:14px"><input type="checkbox" id="cHw" style="width:20px;height:20px;flex:0 0 auto;margin-top:1px"><span>✍ Ad soyad ve numarayı el yazısından oku <small style="color:var(--mut)">(deneysel; ilk açılışta model iner, Wi-Fi önerilir)</small></span></label>
+  </div>
+  <div class="dh">ℹ Hakkında</div><div class="hint" style="padding:0 8px;line-height:1.6"><b>Manisa Celal Bayar Üniversitesi<br>Salihli Meslek Yüksekokulu ürünüdür.</b><br>© 2026 Tüm hakları saklıdır.<br>v1.0 · 25.11.2026<br><span style="font-size:12px">Tüm okuma telefonunuzda yapılır; kâğıtlar ve sonuçlar hiçbir sunucuya gönderilmez.</span></div>
+</aside>
+<aside class="drw r" id="pPanel"><div class="row" style="align-items:center"><h2 style="flex:1;margin:0">📁 Projeler ve sınavlar</h2><button class="btn sec" id="pClose" style="flex:0 0 auto;padding:4px 10px">✕</button></div>
   <div class="hint">Her sınavın boş kâğıdı, anahtarı, DÖÇ’leri ve sonuçları ayrı saklanır. Bir sınava sonradan okuttuğunuz kâğıtlar öncekilerin üzerine eklenir.</div><div id="pList"></div>
-  <div class="btns"><button class="btn" id="pNew">+ Yeni proje</button></div></div>
+  <div class="btns"><button class="btn" id="pNew">+ Yeni proje</button></div></aside>
 <div class="steps">
-  <button data-v="1" class="on"><span class="n">1</span>Boş kâğıt</button>
-  <button data-v="2"><span class="n">2</span>Anahtar</button>
-  <button data-v="3"><span class="n">3</span>Öğrenci</button>
-  <button data-v="4"><span class="n">4</span>Sonuçlar</button>
+  <button data-v="1" class="on"><span class="ic">🧾<span class="n">1</span></span>Form</button>
+  <button data-v="2"><span class="ic">🔑<span class="n">2</span></span>Anahtar</button>
+  <button data-v="3"><span class="ic">📷<span class="n">3</span></span>Oku</button>
+  <button data-v="4"><span class="ic">📊<span class="n">4</span></span>Sonuçlar</button>
 </div>
 <main>
 <!-- 1: BOŞ KÂĞIT -->
@@ -139,15 +171,13 @@ input[type=text],input[type=number],select{width:100%;padding:10px;border:1px so
 <section class="view" id="v3">
   <div class="card">
     <h2>3. Öğrenci kâğıdı</h2>
-    <label style="display:flex;gap:8px;align-items:flex-start;margin:4px 0 4px;font-size:14px"><input type="checkbox" id="cImg" checked style="width:20px;height:20px;flex:0 0 auto;margin-top:1px"><span>🖼 Okunan kâğıtların işaretli resmini sakla <small style="color:var(--mut)">(üstünde ad, numara ve puan; sonuçlardan tek tek ya da toplu PDF olarak indirilir)</small></span></label>
-    <label style="display:flex;gap:8px;align-items:flex-start;margin:4px 0 8px;font-size:14px"><input type="checkbox" id="cHw" style="width:20px;height:20px;flex:0 0 auto;margin-top:1px"><span>✍ Ad soyad ve numarayı el yazısından oku <small style="color:var(--mut)">(deneysel; ilk açılışta model iner, Wi-Fi önerilir)</small></span></label>
-    <div class="btns"><button class="btn ok" id="camBtn">📷 Canlı okuma (fotoğraf çekmeden)</button></div>
+    <div class="btns oldpick"><button class="btn ok" id="camBtn">📷 Canlı okuma (fotoğraf çekmeden)</button></div>
     <div id="camBox" style="display:none"><div class="cvwrap" style="position:relative"><video id="vid" playsinline muted autoplay style="width:100%;display:block;background:#000"></video><div id="camSt" style="position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);color:#fff;padding:8px 10px;font-weight:600;font-size:15px">Kamera açılıyor…</div></div>
       <div class="hint">Telefonu kâğıdın üst kısmına (cevap alanı) yaklaştırın, balonlar ekranı doldursun; durmanıza gerek yok, kendisi yakalar. Okuma netleşince sonuç aşağıda çıkar. Onaylayınca kaydedilir, sıradaki kâğıdı koyun.</div>
       <div class="btns"><button class="btn warn" id="camStop">Kamerayı kapat</button></div></div>
-    <div class="btns"><label class="btn acc">Fotoğrafla oku<input type="file" accept="image/*" capture="environment" id="fStu" hidden></label><label class="btn sec" style="flex:0 0 auto">Galeri<input type="file" accept="image/*,application/pdf" multiple id="fStu2" hidden></label></div>
-    <div class="btns"><label class="btn sec">📄 Toplu PDF / çok fotoğraf yükle<input type="file" accept="application/pdf,image/*" multiple id="fBatch" hidden></label></div>
-    <div class="hint">Fotokopi makinesinde toplu taranan PDF'i seçin: her sayfa bir öğrenci kâğıdı olarak okunur. Temiz okunanlar kendiliğinden kaydedilir, şüpheli olanlar sırayla kontrolünüze gelir.</div>
+    <div class="btns oldpick"><label class="btn acc">Fotoğrafla oku<input type="file" accept="image/*" capture="environment" id="fStu" hidden></label><label class="btn sec" style="flex:0 0 auto">Galeri<input type="file" accept="image/*,application/pdf" multiple id="fStu2" hidden></label></div>
+    <div class="btns oldpick"><label class="btn sec">📄 Toplu PDF / çok fotoğraf yükle<input type="file" accept="application/pdf,image/*" multiple id="fBatch" hidden></label></div>
+    <div class="hint">Okumak için sağ alttaki <b>📷 Oku</b> düğmesine basın: canlı kamera, fotoğraf, galeri ya da toplu PDF. Fotokopi makinesinde toplu taranan PDF'i seçin: her sayfa bir öğrenci kâğıdı olarak okunur. Temiz okunanlar kendiliğinden kaydedilir, şüpheli olanlar sırayla kontrolünüze gelir.</div>
     <div id="m3"></div>
     <div id="stuBox" style="display:none">
       <div class="score"><div class="big" id="sBig"></div><div><div id="sDyb" style="font-weight:600"></div><div class="dyb" id="sNote"></div></div></div>
@@ -182,7 +212,8 @@ input[type=text],input[type=number],select{width:100%;padding:10px;border:1px so
     <div id="sumBox" class="hint"></div>
     <div class="btns"><button class="btn" id="xlsx">Excel indir</button><button class="btn sec" id="share">Paylaş</button></div>
     <div class="btns"><button class="btn sec" id="pdfOut">📄 Okunmuş kâğıtlar (PDF)</button></div>
-    <div id="list" style="margin-top:8px"></div>
+    <div class="row" style="gap:6px;margin-top:10px"><input type="search" id="rq" placeholder="🔎 Ad veya numara ara" style="flex:1"><select id="rs" style="flex:0 0 auto;width:auto"><option value="new">En yeni</option><option value="score">Puan ↓</option><option value="low">Puan ↑</option><option value="no">Numara</option><option value="name">Ad</option></select></div>
+    <div id="list" style="margin-top:4px"></div>
     <div class="btns"><button class="btn warn" id="clearRes">Sonuçları sil</button><button class="btn sec" id="newExam">+ Yeni sınav ekle</button></div>
   </div>
 </section>
@@ -190,6 +221,13 @@ input[type=text],input[type=number],select{width:100%;padding:10px;border:1px so
 <footer style="text-align:center;font-size:12px;color:#5b6b70;padding:18px 12px 28px;line-height:1.6;border-top:1px solid #e3ecee;margin-top:16px">
   <img src="cbu_logo.png" alt="" style="height:40px;display:block;margin:0 auto 6px" onerror="this.style.display='none'">
   <b>Manisa Celal Bayar Üniversitesi<br>Salihli Meslek Yüksekokulu ürünüdür.</b><br>© 2026 Tüm hakları saklıdır. · <span id="ver2">v1.0 · 25.11.2026</span></footer>
+<button id="fab">📷 Oku</button>
+<div class="bsheet" id="pick"><div class="grab"></div><b style="font-size:16px">Kâğıdı nasıl okuyalım?</b>
+  <button class="opt" data-k="cam"><span class="ic">🎥</span><span><b>Canlı okuma</b><small>Kamerayı kâğıda tutun, kendisi yakalar</small></span></button>
+  <button class="opt" data-k="photo"><span class="ic">📸</span><span><b>Fotoğraf çek</b><small>Tek kâğıt</small></span></button>
+  <button class="opt" data-k="gal"><span class="ic">🖼</span><span><b>Galeriden seç</b><small>Fotoğraf ya da PDF</small></span></button>
+  <button class="opt" data-k="batch"><span class="ic">📄</span><span><b>Toplu PDF / çok fotoğraf</b><small>Fotokopiden taranmış tüm sınıf</small></span></button></div>
+<div class="bsheet" id="rsheet"><div class="grab"></div><div id="rsBody"></div></div>
 <div class="toast" id="toast"></div>
 <div class="busy" id="busy"><div class="spin"></div><div id="busyTxt">Okunuyor…</div></div>
 <script>
@@ -1205,9 +1243,9 @@ const msg=(id,cls,html)=>{$(id).innerHTML=html?`<div class="msg ${cls}">${html}<
 const fmt=v=>v==null?'—':(Math.round(v*100)/100).toString().replace('.',',');
 
 /* ================= ADIMLAR ================= */
-function show(v){if(v===2)setTimeout(()=>{try{docBox();}catch(e){}},0);document.querySelectorAll('.view').forEach(x=>x.classList.toggle('on',x.id==='v'+v));document.querySelectorAll('.steps button').forEach(b=>b.classList.toggle('on',b.dataset.v==v));
+function show(v){document.body.dataset.v=v;closeAll();if(v===2)setTimeout(()=>{try{docBox();}catch(e){}},0);document.querySelectorAll('.view').forEach(x=>x.classList.toggle('on',x.id==='v'+v));document.querySelectorAll('.steps button').forEach(b=>b.classList.toggle('on',b.dataset.v==v));
   if(v==2)drawKey();if(v==4)renderList();window.scrollTo(0,0);}
-function stepState(){const b=document.querySelectorAll('.steps button');b[0].classList.toggle('done',!!S.tpl);b[1].classList.toggle('done',S.keyOk);$('#hTitle').textContent=(S.cfg.title||'Optik Okuyucu')+(S.results.length?` · ${S.results.length} öğrenci`:'');}
+function stepState(){const b=document.querySelectorAll('.steps button');b[0].classList.toggle('done',!!S.tpl);b[1].classList.toggle('done',S.keyOk);$('#hTitle').textContent=(typeof EX==='function'&&EX()?EX().name:S.cfg.title)||'Optik Okuyucu';}
 document.querySelectorAll('.steps button').forEach(b=>b.onclick=()=>{const v=+b.dataset.v;if(v>=2&&!S.tpl){toast('Önce boş kâğıdı çekin');return;}if(v===3&&!S.keyOk){toast('Önce cevap anahtarını onaylayın');return;}show(v);});
 $('#cN').value=S.cfg.n;$('#cOpts').value=S.cfg.opts;$('#cTitle').value=S.cfg.title;
 
@@ -1880,16 +1918,30 @@ $('#fBatch').onchange=e=>{const fs=[...e.target.files];e.target.value='';if(fs.l
 /* ================= 4: SONUÇLAR ================= */
 function renderList(){const rs=S.results;const sc=rs.map(r=>r.score);const avg=sc.length?sc.reduce((a,b)=>a+b,0)/sc.length:null;
   $('#sumBox').textContent=rs.length?`${rs.length} öğrenci · ortalama ${fmt(avg==null?null:Math.round(avg*10)/10)} · en yüksek ${fmt(Math.max(...sc))} · en düşük ${fmt(Math.min(...sc))}`:'Henüz kayıt yok.';
-  const box=$('#list');box.innerHTML='';rs.slice().reverse().forEach((r,ri)=>{const d=document.createElement('div');d.className='res';
-    d.innerHTML=`<div style="flex:1;min-width:0"><div class="nm">${r.name?esc(r.name):(r.img?`<img src="${r.img}">`:'<i>isimsiz</i>')}</div><div class="meta">${r.no?esc(r.no)+' · ':''}${r.book?'<b>'+r.book+' kitapçığı</b> · ':''}${(()=>{const G=r.grp||[];const L=G.some(x=>x.kind==='sec')?G.filter(x=>x.kind==='sec'):G;return L.map(x=>esc(x.name)+': '+fmt(x.pts)).join(' · ');})()}${(r.grp||[]).length?'<br>':''}${r.D} D · ${r.Y} Y · ${r.B} B${r.edited?' · elle düzeltildi':''}</div></div><div class="sc">${fmt(r.score)}</div><button class="btn warn" style="padding:6px 10px;flex:0 0 auto">Sil</button>${r.hasImg?'<button class="btn sec imgb" style="padding:6px 10px;flex:0 0 auto;margin-left:4px" title="İşaretli kâğıt resmi">🖼</button>':''}`;
-    d.querySelector('button').onclick=()=>{if(confirm('Bu kayıt silinsin mi?')){if(r.hasImg)IDB.del('res_'+r.id);S.results=S.results.filter(x=>x!==r);persist();renderList();stepState();}};
-    {const ib=d.querySelector('.imgb');if(ib)ib.onclick=async()=>{const b=await IDB.get('res_'+r.id);if(b)download(b,fbase()+'_'+((r.no||r.name||r.id)+'').replace(/[^\wçğıöşüÇĞİÖŞÜ-]/g,'_')+'.jpg');else toast('Resim bulunamadı');};}
-    d.querySelector('.nm').onclick=()=>{const n=prompt('Ad soyad',r.name||'');if(n!=null){r.name=n.trim();persist();renderList();}};box.appendChild(d);});}
+  const q=($('#rq').value||'').trim().toLocaleLowerCase('tr');const so=$('#rs').value;
+  let L=rs.slice().reverse();if(q)L=L.filter(r=>((r.name||'')+' '+(r.no||'')).toLocaleLowerCase('tr').includes(q));
+  const cmp={score:(a,b)=>b.score-a.score,low:(a,b)=>a.score-b.score,no:(a,b)=>String(a.no||'~').localeCompare(String(b.no||'~'),'tr',{numeric:true}),name:(a,b)=>String(a.name||'~').localeCompare(String(b.name||'~'),'tr')}[so];if(cmp)L.sort(cmp);
+  const box=$('#list');box.innerHTML=L.length?'':`<div class="hint" style="padding:10px">${q?'Aramaya uyan kayıt yok.':'Henüz kayıt yok. 📷 Oku ile kâğıt okutun.'}</div>`;
+  L.forEach(r=>{const d=document.createElement('div');d.className='rrow';const col=r.score>=70?'var(--ok)':r.score>=50?'#f08c00':'var(--bad)';
+    d.innerHTML=`<div class="who"><b>${r.name?esc(r.name):(r.img?`<img src="${r.img}">`:'<i style="font-weight:400">isimsiz</i>')}</b><small>${r.no?esc(r.no):'numara yok'}${r.book&&MULTI()?' · '+r.book:''} · ${r.D}D ${r.Y}Y ${r.B}B${r.edited?' · ✎':''}${r.hasImg?' · 🖼':''}</small></div><div class="pt"><b>${fmt(r.score)}</b><div class="bar"><i style="width:${Math.max(2,Math.min(100,r.score||0))}%;background:${col}"></i></div></div>`;
+    d.onclick=()=>openRes(r);box.appendChild(d);});}
+async function openRes(r){const G=r.grp||[];const b=$('#rsBody');
+  b.innerHTML=`<div class="row" style="align-items:flex-start;gap:10px"><div style="flex:1;min-width:0"><div style="font-size:17px;font-weight:700">${r.name?esc(r.name):'(isimsiz)'}</div><div class="dim">${r.no?'No: '+esc(r.no):'numara yok'}${r.book&&MULTI()?' · '+r.book+' kitapçığı':''}${r.src?' · '+esc(r.src):''}</div></div><div style="text-align:right"><div style="font-size:30px;font-weight:800;color:var(--p)">${fmt(r.score)}</div><div class="dim" style="font-size:12px">${r.D} doğru · ${r.Y} yanlış · ${r.B} boş</div></div></div>
+  ${G.length?`<div style="margin:10px 0">${G.map(x=>`<div class="row" style="gap:8px;font-size:14px;padding:3px 0;border-bottom:1px dashed var(--line)"><span style="flex:1">${esc(x.name)}</span><b>${fmt(x.pts)}</b>${x.max!=null?`<span class="dim">/ ${fmt(x.max)}</span>`:''}</div>`).join('')}</div>`:''}
+  <div id="rsImg" style="margin:8px 0;text-align:center"></div>
+  <div class="btns"><button class="btn sec" id="rsN">✎ Ad</button><button class="btn sec" id="rsNo">✎ Numara</button>${r.hasImg?'<button class="btn sec" id="rsI">🖼 İndir</button>':''}<button class="btn warn" id="rsD">🗑 Sil</button></div>`;
+  openD('rsheet');
+  $('#rsN').onclick=()=>{const n=prompt('Ad soyad',r.name||'');if(n!=null){r.name=n.trim();persist();renderList();openRes(r);}};
+  $('#rsNo').onclick=()=>{const n=prompt('Öğrenci numarası',r.no||'');if(n!=null){r.no=n.trim();persist();renderList();openRes(r);}};
+  $('#rsD').onclick=()=>{if(confirm('Bu kayıt silinsin mi?')){if(r.hasImg)IDB.del('res_'+r.id);S.results=S.results.filter(x=>x!==r);persist();renderList();stepState();closeAll();}};
+  if(r.hasImg){const bl=await IDB.get('res_'+r.id);if(bl){const u=URL.createObjectURL(bl);$('#rsImg').innerHTML=`<img src="${u}" style="max-width:100%;border-radius:10px;border:1px solid var(--line)">`;
+    $('#rsI').onclick=()=>download(bl,fbase()+'_'+((r.no||r.name||r.id)+'').replace(/[^\wçğıöşüÇĞİÖŞÜ-]/g,'_')+'.jpg');}else{$('#rsI').onclick=()=>toast('Resim bulunamadı');}}}
+$('#rq').oninput=renderList;$('#rs').onchange=renderList;
 $('#clearRes').onclick=()=>{if(S.results.length&&confirm('Tüm sonuçlar silinsin mi?')){S.results.forEach(r=>{if(r.hasImg)IDB.del('res_'+r.id);});S.results=[];persist();renderList();stepState();}};
 $('#newExam').onclick=()=>addExam(EX().pid);
 /* ---- proje / sınav paneli ---- */
 function pbar(){const e=EX(),p=P.projects.find(x=>x.id===e.pid);$('#pbP').textContent=p?p.name:'';$('#pbE').textContent=e.name;$('#pbN').textContent=`${(S.results||[]).length} kâğıt`;
-  if(!$('#pPanel').hidden)renderProj();}
+  if($('#pPanel').classList.contains('open'))renderProj();}
 function renderProj(){const box=$('#pList');let h='';P.projects.forEach(p=>{const ex=P.exams.filter(e=>e.pid===p.id);
   h+=`<div class="pj"><div class="row" style="align-items:center;gap:6px"><b style="flex:1;font-size:15px">📁 ${esc(p.name)}</b><button class="btn sec pjR" data-p="${p.id}" style="padding:4px 8px;flex:0 0 auto">✎</button>${P.projects.length>1?`<button class="btn warn pjD" data-p="${p.id}" style="padding:4px 8px;flex:0 0 auto">🗑</button>`:''}</div>
     <div class="extabs">${ex.map(e=>`<button class="ex${e.id===P.cur?' on':''}" data-e="${e.id}">📝 ${esc(e.name)}<small>${e.n||0} kâğıt · ${new Date(e.updated||e.created).toLocaleDateString('tr-TR')}</small></button>`).join('')}<button class="ex add" data-p="${p.id}">+ Sınav ekle</button></div>
@@ -1905,16 +1957,29 @@ function renderProj(){const box=$('#pList');let h='';P.projects.forEach(p=>{cons
     if(!confirm(`“${e.name}” sınavı ve ${e.n||0} kâğıt sonucu silinsin mi?`))return;dropExam(e.id);P.cur=P.exams[0].id;saveP();location.reload();});}
 function dropExam(id){try{const o=JSON.parse(localStorage.getItem('optik2:'+id)||'null');if(o&&o.results)o.results.forEach(r=>{if(r.hasImg)IDB.del('res_'+r.id);});}catch(e){}
   try{localStorage.removeItem('optik2:'+id);}catch(e){}IDB.del('tpl:'+id);P.exams=P.exams.filter(e=>e.id!==id);}
-function switchExam(id){if(id===P.cur){$('#pPanel').hidden=true;return;}persist();P.cur=id;P.first=false;saveP();busy(true,'Sınav açılıyor…');location.reload();}
+function switchExam(id){if(id===P.cur){closeAll();return;}persist();P.cur=id;P.first=false;saveP();busy(true,'Sınav açılıyor…');location.reload();}
 async function addExam(pid){const n=prompt('Yeni sınavın adı (örn. Vize, Final, Bütünleme)','');if(!n||!n.trim())return;
   const same=S.tpl&&confirm(`“${EX().name}” sınavının boş kâğıdı (optik form), soru sayısı ve DÖÇ ayarları yeni sınavda da kullanılsın mı?\n\nTamam: aynı formla devam · İptal: boş başla`);
   const id=uid();const N=JSON.parse(JSON.stringify(DEF));N.cfg.title=n.trim();
   if(same){N.tpl=JSON.parse(JSON.stringify(S.tpl));const c=JSON.parse(JSON.stringify(S.cfg));delete c.qtext;N.cfg=Object.assign(c,{title:n.trim()});try{const b=await IDB.get(TPLK)||(P.legacy===P.cur?await IDB.get('tpl'):null);if(b)await IDB.put('tpl:'+id,b);}catch(e){}}
   persist();P.exams.push({id,pid,name:n.trim(),created:Date.now(),updated:Date.now(),n:0});P.cur=id;P.first=false;saveP();try{localStorage.setItem('optik2:'+id,JSON.stringify(N));}catch(e){}busy(true,'Sınav açılıyor…');location.reload();}
-$('#pbBtn').onclick=()=>{const pp=$('#pPanel');pp.hidden=!pp.hidden;if(!pp.hidden){renderProj();window.scrollTo({top:0,behavior:'smooth'});}};
+$('#pbBtn').onclick=()=>{if($('#pPanel').classList.contains('open'))closeAll();else{renderProj();openD('pPanel');}};
 $('#pNew').onclick=()=>{const n=prompt('Yeni proje adı (örn. 2026 Güz · Rapor Yazım Becerileri)','');if(!n||!n.trim())return;const pid=uid();P.projects.push({id:pid,name:n.trim()});saveP();renderProj();addExam(pid);};
-$('#pClose').onclick=()=>{$('#pPanel').hidden=true;};
-pbar();if(P.first||P.exams.length>1){$('#pPanel').hidden=false;renderProj();if(P.first){P.first=false;saveP();}}
+$('#pClose').onclick=closeAll;
+/* ---- çekmeceler ve alt pencereler ---- */
+function wide(){return matchMedia('(min-width:1100px)').matches;}
+function openD(id){closeAll();$('#'+id).classList.add('open');if(!(wide()&&$('#'+id).classList.contains('drw')))$('#ov').classList.add('on');}
+function closeAll(){document.querySelectorAll(wide()?'.bsheet.open':'.drw.open,.bsheet.open').forEach(x=>x.classList.remove('open'));const o=document.getElementById('ov');if(o)o.classList.remove('on');}
+$('#ov').onclick=closeAll;$('#mL').onclick=()=>{if($('#dL').classList.contains('open'))closeAll();else openD('dL');};$('#dLClose').onclick=closeAll;
+document.querySelectorAll('#dL .mnu button').forEach(b=>b.onclick=()=>{const g=b.dataset.go;closeAll();
+  if(g==='mk'||g==='old'){mkLoad();show(0);if(g==='old')setTimeout(()=>{const x=$('#xOld').closest('label')||$('#xOld');x.scrollIntoView({behavior:'smooth',block:'center'});},150);return;}
+  if(g==='pr'){renderProj();openD('pPanel');return;}const st=document.querySelector(`.steps button[data-v="${g}"]`);if(st)st.click();});
+$('#fab').onclick=()=>openD('pick');
+document.querySelectorAll('#pick .opt').forEach(b=>b.onclick=()=>{closeAll();const k=b.dataset.k;if(k==='cam')$('#camBtn').click();else if(k==='photo')$('#fStu').click();else if(k==='gal')$('#fStu2').click();else $('#fBatch').click();});
+/* geniş ekranda çekmeceler sabit durur */
+function layout(){if(wide()){$('#dL').classList.add('open');$('#pPanel').classList.add('open');renderProj();$('#ov').classList.remove('on');}}
+addEventListener('resize',()=>{if(wide())layout();});
+pbar();layout();if(!wide()&&(P.first||P.exams.length>1)){renderProj();openD('pPanel');if(P.first){P.first=false;saveP();}}
 function download(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},4000);}
 function MULTI_SEC(){return sections().length>1;}
 function buildXlsx(){const n=S.cfg.n;const qh=[];const QS=S.tpl&&S.tpl.kind==='grid'&&S.tpl.sections&&S.tpl.sections.length>1?S.tpl.qs:null;const ab=s=>s.split(/\s+/).filter(w=>w.length>2||/^[A-ZÇĞİÖŞÜ]/.test(w)).map(w=>w[0].toLocaleUpperCase('tr')).join('').slice(0,4);
